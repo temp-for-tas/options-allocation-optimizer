@@ -181,6 +181,14 @@
       padding: 6px 14px;
     }
 
+    /* Total cost column */
+    .col-total {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      padding: 6px 14px;
+    }
+
     /* Recommended contracts column */
     .col-rec {
       background: #151b2e;
@@ -356,6 +364,7 @@
         <th>Premium ($)</th>
         <th>Cost / Contract</th>
         <th>Rec. Contracts</th>
+        <th>Total Cost</th>
         <th></th>
       </tr>
     </thead>
@@ -586,16 +595,22 @@
     const activeRows = rows.filter(r => r.strike > 0);
     const counts = optimize(activeRows, cash);
 
-    // Update Recommended Contracts cells
+    // Update Recommended Contracts and Total Cost cells
     rows.forEach(r => {
-      const cell = r.tr.querySelector('.col-rec');
+      const recCell   = r.tr.querySelector('.col-rec');
+      const totalCell = r.tr.querySelector('.col-total');
       const idx = activeRows.indexOf(r);
       if (idx >= 0 && counts[idx] > 0) {
-        cell.textContent = counts[idx];
-        cell.classList.remove('empty');
+        recCell.textContent = counts[idx];
+        recCell.classList.remove('empty');
+        const rowTotal = r.cost * counts[idx];
+        totalCell.textContent = '$' + rowTotal.toLocaleString('en-US', {
+          minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
       } else {
-        cell.textContent = '—';
-        cell.classList.add('empty');
+        recCell.textContent = '—';
+        recCell.classList.add('empty');
+        totalCell.textContent = '—';
       }
     });
 
@@ -652,6 +667,7 @@
       <td><input class="inp-premium" type="number" min="0" step="0.01" placeholder="1.50" value="${premium}" /></td>
       <td class="col-cost">—</td>
       <td class="col-rec empty">—</td>
+      <td class="col-total">—</td>
       <td><button class="btn-remove" title="Remove row">✕</button></td>
     `;
 
