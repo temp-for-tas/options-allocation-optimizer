@@ -263,7 +263,50 @@ describe('optimize – greedy fallback (solver = null)', () => {
   });
 });
 
-// ── ILP vs greedy divergence ──────────────────────────────────────────────────
+// ── optimize – minimum 1 contract per ticker ─────────────────────────────────
+
+describe('optimize – minimum 1 contract per ticker', () => {
+  it('assigns at least 1 contract to every active row when affordable', () => {
+    // RUN: 12 strike, 0.12 premium → cost = (12-0.12)*100 + 0.66 = 1188.66
+    // IREN: 35 strike, 0.35 premium → cost = (35-0.35)*100 + 0.66 = 3465.66
+    // APLD: 29 strike, 0.29 premium → cost = (29-0.29)*100 + 0.66 = 2871.66
+    const rows = [
+      row(1188.66),  // RUN
+      row(3465.66),  // IREN
+      row(2871.66),  // APLD
+    ];
+    const counts = optimize(rows, 50000);
+    expect(counts[0]).toBeGreaterThanOrEqual(1); // RUN
+    expect(counts[1]).toBeGreaterThanOrEqual(1); // IREN
+    expect(counts[2]).toBeGreaterThanOrEqual(1); // APLD
+  });
+
+  it('still respects the budget with minimum-1 enforced', () => {
+    const rows   = [row(1188.66), row(3465.66), row(2871.66)];
+    const cash   = 50000;
+    const counts = optimize(rows, cash);
+    expect(totalUsed(rows, counts)).toBeLessThanOrEqual(cash);
+  });
+
+  it('skips minimum-1 when combined minimum cost exceeds budget', () => {
+    // Two rows each costing $6000, budget only $9000 — can't afford both
+    const rows   = [row(6000), row(6000)];
+    const cash   = 9000;
+    const counts = optimize(rows, cash);
+    // Budget is too tight to guarantee 1 each (12000 > 9000),
+    // so optimizer falls back to best-effort — must still respect budget
+    expect(totalUsed(rows, counts)).toBeLessThanOrEqual(cash);
+  });
+
+  it('greedy fallback also enforces minimum-1 when affordable', () => {
+    const rows   = [row(1000), row(2000), row(3000)];
+    const cash   = 20000;
+    const counts = optimize(rows, cash, null); // force greedy
+    expect(counts[0]).toBeGreaterThanOrEqual(1);
+    expect(counts[1]).toBeGreaterThanOrEqual(1);
+    expect(counts[2]).toBeGreaterThanOrEqual(1);
+  });
+});
 
 describe('ILP vs greedy – correctness guarantee', () => {
   /**
@@ -334,8 +377,9 @@ describe('ILP vs greedy – correctness guarantee', () => {
 
     expect(used).toBeLessThanOrEqual(10000);
     expect(used).toBeGreaterThan(0);
-    // ILP should find the exact optimal: 5000+3000=8000, or 3000+3000=6000,
-    // or 5000+5000=10000. Best is 5000+5000=10000.
-    expect(used).toBe(10000); // ILP finds the exact optimum
+    // With minimum-1 enforced: both rows get at least 1 contract.
+    // 5000+3000=8000. Remaining=$2000 — neither fits another contract.
+    // ILP optimum with min-1 constraint is $8000.
+    expect(used).toBe(8000);
   });
 });

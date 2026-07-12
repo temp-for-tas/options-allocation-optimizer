@@ -77,6 +77,11 @@ export function optimize(rows, availableCash, solverOverride = null) {
   const budget   = availableCash - freeCost;
   if (budget <= 0) return counts;
 
+  // Check whether we can afford at least 1 contract of every active row.
+  // If not, fall back to best-effort (no minimum guarantee possible).
+  const minCost = activeIdx.reduce((s, i) => s + rows[i].cost, 0);
+  const enforceMin = minCost <= budget;
+
   const s = solverOverride ?? solver;
 
   if (s) {
@@ -104,6 +109,13 @@ export function optimize(rows, availableCash, solverOverride = null) {
 
         model.variables[v] = { obj: c, budget: c };
         model.ints[v]      = 1;
+
+        // Lower bound: at least 1 contract per ticker (if affordable)
+        if (enforceMin) {
+          const lbKey = `lb${j}`;
+          model.constraints[lbKey]  = { min: 1 };
+          model.variables[v][lbKey] = 1;
+        }
 
         // Upper bound
         const ubKey = `ub${j}`;
@@ -137,6 +149,11 @@ export function optimize(rows, availableCash, solverOverride = null) {
   }
 
   // ── Greedy fallback ─────────────────────────────────────────────────────
+  // Pre-seed 1 contract per active row if the budget allows it
+  if (enforceMin) {
+    activeIdx.forEach(i => { counts[i] = 1; });
+  }
+
   const eligible  = activeIdx.map(i => ({ idx: i, cost: rows[i].cost }));
   const totalCost = () => rows.reduce((sum, r, i) => sum + r.cost * counts[i], 0);
 
