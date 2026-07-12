@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Options Allocation Optimizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #f8fafc;
+      margin-bottom: 24px;
+    }
+
+    /* ── Top controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .field-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    input[type="number"], input[type="text"] {
+      background: #1e2330;
+      border: 1px solid #2d3548;
+      border-radius: 6px;
+      color: #f1f5f9;
+      font-size: 0.9rem;
+      padding: 6px 10px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="number"]:focus, input[type="text"]:focus {
+      border-color: #4f8ef7;
+    }
+    input[type="number"] { width: 140px; }
+    input[type="text"]   { width: 90px; }
+
+    /* ── Mode toggle ── */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .toggle input { display: none; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #2d3548;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: #94a3b8;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle input:checked + .slider { background: #1e3a5f; }
+    .toggle input:checked + .slider::before {
+      transform: translateX(20px);
+      background: #4f8ef7;
+    }
+    .toggle-label-active { color: #4f8ef7; font-weight: 600; }
+
+    /* ── Table ── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid #2d3548;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead tr {
+      background: #181d2a;
+    }
+
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      white-space: nowrap;
+      border-bottom: 1px solid #2d3548;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #1e2330;
+      transition: background 0.1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #181d2a; }
+
+    td {
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+
+    td input[type="text"],
+    td input[type="number"] {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 4px 6px;
+      color: #f1f5f9;
+      font-size: 0.875rem;
+    }
+    td input:focus {
+      background: #1e2330;
+      border-color: #4f8ef7;
+    }
+
+    /* Type select */
+    td select {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: #f1f5f9;
+      font-size: 0.875rem;
+      padding: 4px 6px;
+      cursor: pointer;
+      outline: none;
+      width: 100%;
+    }
+    td select:focus {
+      background: #1e2330;
+      border-color: #4f8ef7;
+    }
+    td select option { background: #1e2330; }
+
+    /* Cost/contract column */
+    .col-cost {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      padding: 6px 14px;
+    }
+
+    /* Recommended contracts column */
+    .col-rec {
+      background: #151b2e;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #4f8ef7;
+      min-width: 80px;
+      padding: 6px 14px;
+    }
+    .col-rec.empty { color: #2d3548; }
+
+    /* Remove row button */
+    .btn-remove {
+      background: none;
+      border: none;
+      color: #4a5568;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .btn-remove:hover { color: #f56565; }
+
+    /* ── Row actions ── */
+    .row-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    button {
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 7px 16px;
+      border: none;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+
+    .btn-add {
+      background: #1e3a5f;
+      color: #4f8ef7;
+      border: 1px solid #2a4a75;
+    }
+
+    .btn-reset {
+      background: #2d1f1f;
+      color: #f56565;
+      border: 1px solid #4a2828;
+    }
+
+    /* ── Summary bar ── */
+    .summary {
+      margin-top: 24px;
+      background: #181d2a;
+      border: 1px solid #2d3548;
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .summary-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .summary-stat .stat-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #4a5568;
+    }
+
+    .summary-stat .stat-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    /* Allocation meter */
+    .meter-wrap {
+      flex: 1;
+      min-width: 160px;
+    }
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-bottom: 5px;
+    }
+    .meter-track {
+      height: 8px;
+      background: #2d3548;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.3s ease, background 0.3s ease;
+      width: 0%;
+      background: #4f8ef7;
+    }
+    .meter-fill.good   { background: #48bb78; }
+    .meter-fill.okay   { background: #ecc94b; }
+    .meter-fill.low    { background: #f56565; }
+
+    /* allocation % badge */
+    .alloc-pct {
+      font-size: 1.5rem;
+      font-weight: 800;
+      transition: color 0.3s;
+    }
+    .alloc-pct.good  { color: #48bb78; }
+    .alloc-pct.okay  { color: #ecc94b; }
+    .alloc-pct.low   { color: #f56565; }
+    .alloc-pct.none  { color: #2d3548; }
+  </style>
+</head>
+<body>
+
+<h1>Options Allocation Optimizer</h1>
+
+<!-- ── Top controls ── -->
+<div class="controls">
+  <div class="field-group">
+    <label for="cash-input">Available Cash ($)</label>
+    <input type="number" id="cash-input" min="0" step="100" placeholder="e.g. 50000" />
+  </div>
+
+  <div class="toggle-wrap">
+    <span id="mode-label-basic">Basic</span>
+    <label class="toggle">
+      <input type="checkbox" id="mode-toggle" checked />
+      <span class="slider"></span>
+    </label>
+    <span id="mode-label-enhanced">Enhanced</span>
+  </div>
+</div>
+
+<!-- ── Table ── -->
+<div class="table-wrap">
+  <table id="contracts-table">
+    <thead>
+      <tr>
+        <th>Ticker</th>
+        <th>Type</th>
+        <th>Strike ($)</th>
+        <th>Premium ($)</th>
+        <th>Cost / Contract</th>
+        <th>Rec. Contracts</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <!-- rows injected by JS -->
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Row actions ── -->
+<div class="row-actions">
+  <button class="btn-add" id="btn-add-row">+ Add 10 Rows</button>
+  <button class="btn-reset" id="btn-reset">Reset</button>
+</div>
+
+<!-- ── Summary bar ── -->
+<div class="summary">
+  <div class="summary-stat">
+    <span class="stat-label">Allocated</span>
+    <span class="stat-value" id="stat-used">$—</span>
+  </div>
+  <div class="summary-stat">
+    <span class="stat-label">Remaining</span>
+    <span class="stat-value" id="stat-remaining">$—</span>
+  </div>
+  <div class="summary-stat">
+    <span class="stat-label">Total Premium</span>
+    <span class="stat-value" id="stat-premium">$—</span>
+  </div>
+  <div class="summary-stat">
+    <span class="stat-label">Utilization</span>
+    <span class="alloc-pct none" id="stat-pct">—%</span>
+  </div>
+  <div class="meter-wrap">
+    <div class="meter-label">
+      <span>0%</span><span>100%</span>
+    </div>
+    <div class="meter-track">
+      <div class="meter-fill" id="meter-fill"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Constants ──────────────────────────────────────────────
+  const COMMISSION   = 0.65;   // per contract
+  const EXCHANGE_FEE = 0.01;   // per contract
+  const TOTAL_FEE    = COMMISSION + EXCHANGE_FEE; // 0.66
+
+  // ── State ──────────────────────────────────────────────────
+  let enhanced = true;
+  let rowId = 0;
+
+  // ── DOM refs ───────────────────────────────────────────────
+  const cashInput    = document.getElementById('cash-input');
+  const modeToggle   = document.getElementById('mode-toggle');
+  const modeLabelB   = document.getElementById('mode-label-basic');
+  const modeLabelE   = document.getElementById('mode-label-enhanced');
+  const tableBody    = document.getElementById('table-body');
+  const btnAddRow    = document.getElementById('btn-add-row');
+  const btnReset     = document.getElementById('btn-reset');
+  const statUsed     = document.getElementById('stat-used');
+  const statRemaining= document.getElementById('stat-remaining');
+  const statPremium  = document.getElementById('stat-premium');
+  const statPct      = document.getElementById('stat-pct');
+  const meterFill    = document.getElementById('meter-fill');
+
+  // ── Cost model ─────────────────────────────────────────────
+  /**
+   * Returns the net cash cost of ONE contract for a given row.
+   * Puts: positive (cash consumed).
+   * Calls: negative (premium inflow minus fees).
+   *
+   * Basic mode:   puts = strike×100, calls = 0
+   * Enhanced mode: full model with premiums and fees
+   */
+  function computeCost(type, strike, premium, isEnhanced) {
+    const s = parseFloat(strike)   || 0;
+    const p = parseFloat(premium)  || 0;
+    const isPut = type === 'put';
+
+    if (!isEnhanced) {
+      return isPut ? s * 100 : 0;
+    }
+
+    // Enhanced
+    if (isPut) {
+      return (s * 100) - (p * 100) + TOTAL_FEE;
+    } else {
+      // Call: premium collected reduces cash need; fee still paid
+      return -(p * 100) + TOTAL_FEE;
+    }
+  }
+
+  // ── Optimizer ──────────────────────────────────────────────
+  /**
+   * Greedy integer knapsack that prefers even distribution.
+   *
+   * Algorithm:
+   *   1. Start with 0 contracts for each row.
+   *   2. Each iteration: among all rows where adding 1 contract
+   *      keeps total cost ≤ availableCash, find the one with the
+   *      fewest current contracts (evenness). Break ties by
+   *      picking the one whose addition brings utilisation closest
+   *      to 100% (without exceeding).
+   *   3. Repeat until no valid addition exists.
+   *
+   * Rows with non-positive cost (calls in basic mode, or calls
+   * that generate net premium exceeding fees) are handled:
+   *   - Zero-cost rows: skipped (would loop forever).
+   *   - Negative-cost rows (calls with net inflow): their
+   *     contracts are set to 1 each upfront as they free cash.
+   *     (We cap them at 1 here since we have no share-count info.)
+   */
+  function optimize(rows, availableCash) {
+    const counts = new Array(rows.length).fill(0);
+    if (!availableCash || availableCash <= 0) return counts;
+
+    // Pre-assign 1 contract to any row that has zero or negative
+    // cost (i.e., pure premium inflow), as they don't consume cash.
+    rows.forEach((r, i) => {
+      if (r.cost <= 0) counts[i] = 1;
+    });
+
+    // Compute initial cash used (negative-cost rows reduce the total)
+    const totalCost = () =>
+      rows.reduce((sum, r, i) => sum + r.cost * counts[i], 0);
+
+    // Only positive-cost rows participate in the greedy loop
+    const eligible = rows
+      .map((r, i) => ({ ...r, idx: i }))
+      .filter(r => r.cost > 0);
+
+    if (eligible.length === 0) return counts;
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const used = totalCost();
+      const remaining = availableCash - used;
+
+      // Candidates: eligible rows that can absorb 1 more contract
+      const candidates = eligible.filter(r => r.cost <= remaining);
+      if (candidates.length === 0) break;
+
+      // Find minimum contract count among candidates (evenness)
+      const minCount = Math.min(...candidates.map(r => counts[r.idx]));
+      const evenCandidates = candidates.filter(r => counts[r.idx] === minCount);
+
+      // Among the evenly-tied candidates, pick the one whose
+      // addition brings utilisation closest to 100%
+      let best = null;
+      let bestDelta = Infinity;
+      for (const r of evenCandidates) {
+        const newUsed = used + r.cost;
+        const delta = Math.abs(availableCash - newUsed);
+        if (delta < bestDelta) {
+          bestDelta = delta;
+          best = r;
+        }
+      }
+
+      if (best) {
+        counts[best.idx]++;
+        changed = true;
+      }
+    }
+
+    return counts;
+  }
+
+  // ── Recalculate ────────────────────────────────────────────
+  function recalculate() {
+    const cash = parseFloat(cashInput.value) || 0;
+    const rows = [];
+
+    tableBody.querySelectorAll('tr[data-id]').forEach(tr => {
+      const ticker  = tr.querySelector('.inp-ticker').value.trim();
+      const type    = tr.querySelector('.inp-type').value;
+      const strike  = parseFloat(tr.querySelector('.inp-strike').value)  || 0;
+      const premium = parseFloat(tr.querySelector('.inp-premium').value) || 0;
+      const cost    = computeCost(type, strike, premium, enhanced);
+      rows.push({ ticker, type, strike, premium, cost, tr });
+    });
+
+    // Update Cost/Contract cells for all rows
+    rows.forEach(r => {
+      const cell = r.tr.querySelector('.col-cost');
+      if (r.strike === 0) {
+        cell.textContent = '—';
+      } else if (r.cost === 0 && !enhanced) {
+        cell.textContent = r.type === 'call' ? '—' : '$0';
+      } else {
+        const sign = r.cost < 0 ? '-$' : '$';
+        cell.textContent = sign + Math.abs(r.cost).toLocaleString('en-US', {
+          minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+      }
+    });
+
+    // Only rows with a strike entered participate in the optimizer
+    const activeRows = rows.filter(r => r.strike > 0);
+    const counts = optimize(activeRows, cash);
+
+    // Update Recommended Contracts cells
+    rows.forEach(r => {
+      const cell = r.tr.querySelector('.col-rec');
+      const idx = activeRows.indexOf(r);
+      if (idx >= 0 && counts[idx] > 0) {
+        cell.textContent = counts[idx];
+        cell.classList.remove('empty');
+      } else {
+        cell.textContent = '—';
+        cell.classList.add('empty');
+      }
+    });
+
+    // Compute totals from active rows only
+    const totalUsed    = activeRows.reduce((sum, r, i) => sum + r.cost * counts[i], 0);
+    const totalPremium = activeRows.reduce((sum, r, i) => sum + r.premium * 100 * counts[i], 0);
+    const pct          = cash > 0 ? (totalUsed / cash) * 100 : 0;
+    const remaining    = cash - totalUsed;
+
+    if (cash > 0) {
+      statUsed.textContent = '$' + totalUsed.toLocaleString('en-US', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
+      statRemaining.textContent = '$' + remaining.toLocaleString('en-US', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
+      statPremium.textContent = '$' + totalPremium.toLocaleString('en-US', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
+
+      const pctStr = pct.toFixed(1) + '%';
+      statPct.textContent = pctStr;
+
+      const grade = pct >= 95 ? 'good' : pct >= 80 ? 'okay' : 'low';
+      statPct.className   = 'alloc-pct ' + grade;
+      meterFill.className = 'meter-fill ' + grade;
+      meterFill.style.width = Math.min(pct, 100) + '%';
+    } else {
+      statUsed.textContent      = '$—';
+      statRemaining.textContent = '$—';
+      statPremium.textContent   = '$—';
+      statPct.textContent       = '—%';
+      statPct.className         = 'alloc-pct none';
+      meterFill.className       = 'meter-fill';
+      meterFill.style.width     = '0%';
+    }
+  }
+
+  // ── Row factory ────────────────────────────────────────────
+  function createRow(ticker = '', type = 'put', strike = '', premium = '') {
+    const id = ++rowId;
+    const tr = document.createElement('tr');
+    tr.dataset.id = id;
+
+    tr.innerHTML = `
+      <td><input class="inp-ticker" type="text" placeholder="AAPL" value="${ticker}" /></td>
+      <td>
+        <select class="inp-type">
+          <option value="put"  ${type === 'put'  ? 'selected' : ''}>Put</option>
+          <option value="call" ${type === 'call' ? 'selected' : ''}>Call</option>
+        </select>
+      </td>
+      <td><input class="inp-strike"  type="number" min="0" step="0.5"  placeholder="150" value="${strike}" /></td>
+      <td><input class="inp-premium" type="number" min="0" step="0.01" placeholder="1.50" value="${premium}" /></td>
+      <td class="col-cost">—</td>
+      <td class="col-rec empty">—</td>
+      <td><button class="btn-remove" title="Remove row">✕</button></td>
+    `;
+
+    // Per-cell input listeners
+    tr.querySelectorAll('input, select').forEach(el =>
+      el.addEventListener('input', recalculate)
+    );
+
+    // Remove button
+    tr.querySelector('.btn-remove').addEventListener('click', () => {
+      tr.remove();
+      recalculate();
+    });
+
+    return tr;
+  }
+
+  function addRow(ticker, type, strike, premium) {
+    tableBody.appendChild(createRow(ticker, type, strike, premium));
+  }
+
+  // ── Mode toggle ────────────────────────────────────────────
+  modeToggle.addEventListener('change', () => {
+    enhanced = modeToggle.checked;
+    modeLabelB.classList.toggle('toggle-label-active', !enhanced);
+    modeLabelE.classList.toggle('toggle-label-active',  enhanced);
+    recalculate();
+  });
+
+  // ── Buttons ────────────────────────────────────────────────
+  btnAddRow.addEventListener('click', () => {
+    for (let i = 0; i < 10; i++) addRow();
+    recalculate();
+  });
+
+  btnReset.addEventListener('click', () => {
+    cashInput.value = '';
+    tableBody.innerHTML = '';
+    rowId = 0;
+    for (let i = 0; i < 10; i++) addRow();
+    recalculate();
+  });
+
+  cashInput.addEventListener('input', recalculate);
+
+  // ── Init ───────────────────────────────────────────────────
+  // Seed with 10 empty rows
+  for (let i = 0; i < 10; i++) addRow();
+  recalculate();
+
+  // Set initial mode label
+  modeLabelE.classList.add('toggle-label-active');
+</script>
+</body>
+</html>
