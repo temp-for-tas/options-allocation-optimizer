@@ -181,14 +181,6 @@
       padding: 6px 14px;
     }
 
-    /* Total cost column */
-    .col-total {
-      color: #94a3b8;
-      font-size: 0.82rem;
-      white-space: nowrap;
-      padding: 6px 14px;
-    }
-
     /* Recommended contracts column */
     .col-rec {
       background: #151b2e;
@@ -200,6 +192,14 @@
       padding: 6px 14px;
     }
     .col-rec.empty { color: #2d3548; }
+
+    /* Total cost column */
+    .col-total {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      padding: 6px 14px;
+    }
 
     /* Remove row button */
     .btn-remove {
@@ -603,12 +603,11 @@
       if (idx >= 0 && counts[idx] > 0) {
         recCell.textContent = counts[idx];
         recCell.classList.remove('empty');
-        const rowTotal = r.cost * counts[idx];
-        totalCell.textContent = '$' + rowTotal.toLocaleString('en-US', {
+        totalCell.textContent = '$' + (r.cost * counts[idx]).toLocaleString('en-US', {
           minimumFractionDigits: 2, maximumFractionDigits: 2
         });
       } else {
-        recCell.textContent = '—';
+        recCell.textContent  = '—';
         recCell.classList.add('empty');
         totalCell.textContent = '—';
       }
