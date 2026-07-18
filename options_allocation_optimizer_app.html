@@ -99,6 +99,56 @@
     }
     .toggle-label-active { color: #4f8ef7; font-weight: 600; }
 
+    /* ── Accounts section ── */
+    .accounts-section {
+      margin-bottom: 24px;
+      background: #181d2a;
+      border: 1px solid #2d3548;
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+    .accounts-section h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #4a5568;
+      margin-bottom: 10px;
+    }
+    .accounts-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .accounts-row input[type="text"] { width: 120px; }
+    .accounts-row input[type="number"] { width: 130px; }
+    .accounts-row .pos-hint {
+      font-size: 0.75rem;
+      color: #64748b;
+      white-space: nowrap;
+    }
+    .accounts-row .btn-remove-acct {
+      background: none;
+      border: none;
+      color: #4a5568;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .accounts-row .btn-remove-acct:hover { color: #f56565; }
+    .btn-add-acct {
+      background: #1e3a5f;
+      color: #4f8ef7;
+      border: 1px solid #2a4a75;
+      font-size: 0.8rem;
+      padding: 5px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .btn-add-acct:hover { opacity: 0.85; }
+
     /* ── Table ── */
     .table-wrap {
       overflow-x: auto;
@@ -126,6 +176,12 @@
       color: #64748b;
       white-space: nowrap;
       border-bottom: 1px solid #2d3548;
+    }
+    th.acct-group {
+      text-align: center;
+      color: #4f8ef7;
+      border-left: 1px solid #2d3548;
+      font-size: 0.72rem;
     }
 
     tbody tr {
@@ -155,7 +211,6 @@
       border-color: #4f8ef7;
     }
 
-    /* Type select */
     td select {
       background: transparent;
       border: 1px solid transparent;
@@ -173,35 +228,38 @@
     }
     td select option { background: #1e2330; }
 
-    /* Cost/contract column */
     .col-cost {
       color: #94a3b8;
       font-size: 0.82rem;
       white-space: nowrap;
       padding: 6px 14px;
     }
-
-    /* Recommended contracts column */
     .col-rec {
       background: #151b2e;
       text-align: center;
       font-weight: 700;
       font-size: 1rem;
       color: #4f8ef7;
-      min-width: 80px;
-      padding: 6px 14px;
+      min-width: 50px;
+      padding: 6px 10px;
+      border-left: 1px solid #2d3548;
     }
     .col-rec.empty { color: #2d3548; }
 
-    /* Total cost column */
     .col-total {
       color: #94a3b8;
       font-size: 0.82rem;
       white-space: nowrap;
-      padding: 6px 14px;
+      padding: 6px 10px;
     }
 
-    /* Remove row button */
+    .col-pct {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      padding: 6px 10px;
+    }
+
     .btn-remove {
       background: none;
       border: none;
@@ -215,7 +273,6 @@
     }
     .btn-remove:hover { color: #f56565; }
 
-    /* ── Row actions ── */
     .row-actions {
       display: flex;
       gap: 12px;
@@ -238,14 +295,12 @@
       color: #4f8ef7;
       border: 1px solid #2a4a75;
     }
-
     .btn-reset {
       background: #2d1f1f;
       color: #f56565;
       border: 1px solid #4a2828;
     }
 
-    /* ── Solver badge ── */
     .solver-badge {
       font-size: 0.72rem;
       font-weight: 600;
@@ -258,77 +313,154 @@
     .solver-badge.ilp  { color: #48bb78; border-color: #276749; background: #1a2e23; }
     .solver-badge.warn { color: #ecc94b; border-color: #6b5a1e; background: #2a2412; }
 
-    /* ── Summary bar ── */
-    .summary {
+    /* ── Per-account summary cards ── */
+    .summaries-wrap {
       margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .summary {
       background: #181d2a;
       border: 1px solid #2d3548;
       border-radius: 10px;
-      padding: 16px 20px;
+      padding: 14px 18px;
       display: flex;
       align-items: center;
-      gap: 32px;
+      gap: 24px;
       flex-wrap: wrap;
     }
-
+    .summary-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #4f8ef7;
+      min-width: 80px;
+    }
     .summary-stat {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2px;
     }
-
     .summary-stat .stat-label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.07em;
       color: #4a5568;
     }
-
     .summary-stat .stat-value {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
       color: #f1f5f9;
     }
-
-    /* Allocation meter */
     .meter-wrap {
       flex: 1;
-      min-width: 160px;
+      min-width: 120px;
     }
     .meter-label {
       display: flex;
       justify-content: space-between;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       color: #64748b;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
     .meter-track {
-      height: 8px;
+      height: 7px;
       background: #2d3548;
-      border-radius: 8px;
+      border-radius: 7px;
       overflow: hidden;
     }
     .meter-fill {
       height: 100%;
-      border-radius: 8px;
+      border-radius: 7px;
       transition: width 0.3s ease, background 0.3s ease;
       width: 0%;
       background: #4f8ef7;
     }
-    .meter-fill.good   { background: #48bb78; }
-    .meter-fill.okay   { background: #ecc94b; }
-    .meter-fill.low    { background: #f56565; }
+    .meter-fill.good { background: #48bb78; }
+    .meter-fill.okay { background: #ecc94b; }
+    .meter-fill.low  { background: #f56565; }
 
-    /* allocation % badge */
     .alloc-pct {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       font-weight: 800;
       transition: color 0.3s;
     }
-    .alloc-pct.good  { color: #48bb78; }
-    .alloc-pct.okay  { color: #ecc94b; }
-    .alloc-pct.low   { color: #f56565; }
-    .alloc-pct.none  { color: #2d3548; }
+    .alloc-pct.good { color: #48bb78; }
+    .alloc-pct.okay { color: #ecc94b; }
+    .alloc-pct.low  { color: #f56565; }
+    .alloc-pct.none { color: #2d3548; }
+
+    /* ── Funds needed section ── */
+    .funds-needed {
+      margin-top: 16px;
+      background: #181d2a;
+      border: 1px solid #2d3548;
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .funds-needed-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .funds-needed-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #4a5568;
+    }
+    .funds-needed-amount {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ecc94b;
+    }
+    .funds-needed-sub {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 14px;
+    }
+    .funds-needed-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .funds-needed-table th {
+      text-align: left;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #4a5568;
+      padding: 4px 10px 8px;
+      border-bottom: 1px solid #2d3548;
+    }
+    .funds-needed-table td {
+      padding: 6px 10px;
+      color: #cbd5e0;
+      border-bottom: 1px solid #1e2330;
+    }
+    .funds-needed-table tr:last-child td {
+      border-bottom: none;
+    }
+    .change-badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .change-badge.up   { background: #1a2e23; color: #48bb78; border: 1px solid #276749; }
+    .change-badge.down { background: #2d1f1f; color: #f56565; border: 1px solid #4a2828; }
+    .change-badge.same { background: #1e2330; color: #4a5568; border: 1px solid #2d3548; }
+
+    .funds-acct-block { margin-bottom: 18px; }
+    .funds-acct-block:last-child { margin-bottom: 0; }
+    .funds-acct-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #4f8ef7;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
@@ -337,11 +469,6 @@
 
 <!-- ── Top controls ── -->
 <div class="controls">
-  <div class="field-group">
-    <label for="cash-input">Available Cash ($)</label>
-    <input type="number" id="cash-input" min="0" step="100" placeholder="e.g. 50000" />
-  </div>
-
   <div class="toggle-wrap">
     <span id="mode-label-basic">Basic</span>
     <label class="toggle">
@@ -353,20 +480,18 @@
   <span class="solver-badge ilp" id="solver-badge">ILP Exact</span>
 </div>
 
+<!-- ── Accounts ── -->
+<div class="accounts-section">
+  <h2>Accounts</h2>
+  <div id="accounts-list"></div>
+  <button class="btn-add-acct" id="btn-add-acct">+ Add Account</button>
+</div>
+
 <!-- ── Table ── -->
 <div class="table-wrap">
   <table id="contracts-table">
-    <thead>
-      <tr>
-        <th>Ticker</th>
-        <th>Type</th>
-        <th>Strike ($)</th>
-        <th>Premium ($)</th>
-        <th>Cost / Contract</th>
-        <th>Rec. Contracts</th>
-        <th>Total Cost</th>
-        <th></th>
-      </tr>
+    <thead id="table-head">
+      <!-- dynamically generated -->
     </thead>
     <tbody id="table-body">
       <!-- rows injected by JS -->
@@ -380,39 +505,20 @@
   <button class="btn-reset" id="btn-reset">Reset</button>
 </div>
 
-<!-- ── Summary bar ── -->
-<div class="summary">
-  <div class="summary-stat">
-    <span class="stat-label">Allocated</span>
-    <span class="stat-value" id="stat-used">$—</span>
+<!-- ── Per-account summaries ── -->
+<div class="summaries-wrap" id="summaries-wrap"></div>
+
+<!-- ── Funds needed section ── -->
+<div class="funds-needed" id="funds-needed-section" style="display:none">
+  <div class="funds-needed-header">
+    <span class="funds-needed-title">Funds to Reach Full Utilisation</span>
   </div>
-  <div class="summary-stat">
-    <span class="stat-label">Remaining</span>
-    <span class="stat-value" id="stat-remaining">$—</span>
-  </div>
-  <div class="summary-stat">
-    <span class="stat-label">Total Premium</span>
-    <span class="stat-value" id="stat-premium">$—</span>
-  </div>
-  <div class="summary-stat">
-    <span class="stat-label">Utilization</span>
-    <span class="alloc-pct none" id="stat-pct">—%</span>
-  </div>
-  <div class="meter-wrap">
-    <div class="meter-label">
-      <span>0%</span><span>100%</span>
-    </div>
-    <div class="meter-track">
-      <div class="meter-fill" id="meter-fill"></div>
-    </div>
-  </div>
+  <div id="funds-needed-content"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/prod/solver.js"></script>
 <script>
-  // ── Optimizer logic (inlined from optimizer.js) ────────────
-  // Source of truth is optimizer.js — keep in sync when changing either.
-
+  // ── Optimizer logic ─────────────────────────────────────────
   const COMMISSION   = 0.65;
   const EXCHANGE_FEE = 0.01;
   const TOTAL_FEE    = COMMISSION + EXCHANGE_FEE;
@@ -455,53 +561,66 @@
         solverBadge.textContent = 'ILP Exact';
         solverBadge.className   = 'solver-badge ilp';
 
-        const EPS = 1e-4;
         const ub  = activeIdx.map(i => Math.floor(budget / rows[i].cost));
 
+        // Evenness tolerance: allow dollar allocations per ticker to differ
+        // by at most the cost of the most expensive single contract.
+        // This keeps positions balanced in dollar terms while giving the
+        // solver room to fill the budget.
+        const costs = activeIdx.map(i => rows[i].cost);
+        const maxCost = Math.max(...costs);
+        const dollarTolerance = maxCost;
+
+        const EPS = 1e-6; // tiny penalty to prefer tighter balance when equal
+
         const model = {
-          optimize:    'obj',
-          opType:      'max',
-          constraints: {},
-          variables:   {},
-          ints:        {}
+          optimize: 'obj', opType: 'max',
+          constraints: {}, variables: {}, ints: {}
         };
 
-        model.constraints['budget']  = { max: budget };
-        model.variables['maxN']      = { obj: -EPS, budget: 0 };
-        model.variables['minN']      = { obj:  EPS, budget: 0 };
-        model.ints['maxN']           = 1;
-        model.ints['minN']           = 1;
+        model.constraints['budget'] = { max: budget };
+
+        // maxD and minD are continuous variables tracking the largest and
+        // smallest dollar allocation across tickers.
+        // Penalize spread: obj -= EPS*maxD, obj += EPS*minD (minimise gap)
+        model.variables['maxD'] = { obj: -EPS, budget: 0 };
+        model.variables['minD'] = { obj:  EPS, budget: 0 };
+
+        // Hard constraint: maxD - minD <= dollarTolerance
+        model.constraints['dollarEven'] = { max: dollarTolerance };
+        model.variables['maxD']['dollarEven'] = 1;
+        model.variables['minD']['dollarEven'] = -1;
 
         activeIdx.forEach((rowIdx, j) => {
           const v = `x${j}`;
           const c = rows[rowIdx].cost;
-
           model.variables[v] = { obj: c, budget: c };
-          model.ints[v]      = 1;
+          model.ints[v] = 1;
 
           if (enforceMin) {
             const lbKey = `lb${j}`;
-            model.constraints[lbKey]  = { min: 1 };
+            model.constraints[lbKey] = { min: 1 };
             model.variables[v][lbKey] = 1;
           }
 
           const ubKey = `ub${j}`;
-          model.constraints[ubKey]  = { max: ub[j] };
+          model.constraints[ubKey] = { max: ub[j] };
           model.variables[v][ubKey] = 1;
 
-          const maxKey = `max${j}`;
-          model.constraints[maxKey]       = { min: 0 };
-          model.variables['maxN'][maxKey] = 1;
-          model.variables[v][maxKey]      = -1;
+          // maxD >= c * x_j  →  maxD - c*x_j >= 0
+          const maxKey = `maxD_${j}`;
+          model.constraints[maxKey] = { min: 0 };
+          model.variables['maxD'][maxKey] = 1;
+          model.variables[v][maxKey] = -c;
 
-          const minKey = `min${j}`;
-          model.constraints[minKey]       = { min: 0 };
-          model.variables[v][minKey]      = 1;
-          model.variables['minN'][minKey] = -1;
+          // minD <= c * x_j  →  c*x_j - minD >= 0
+          const minKey = `minD_${j}`;
+          model.constraints[minKey] = { min: 0 };
+          model.variables[v][minKey] = c;
+          model.variables['minD'][minKey] = -1;
         });
 
         const result = solver.Solve(model);
-
         if (result.feasible) {
           activeIdx.forEach((rowIdx, j) => {
             counts[rowIdx] = Math.round(result[`x${j}`] || 0);
@@ -521,6 +640,7 @@
 
     const eligible  = activeIdx.map(i => ({ idx: i, cost: rows[i].cost }));
     const totalCost = () => rows.reduce((sum, r, i) => sum + r.cost * counts[i], 0);
+    const dollarAlloc = (idx) => rows[idx].cost * counts[idx];
 
     let changed = true;
     while (changed) {
@@ -530,8 +650,9 @@
       const candidates = eligible.filter(r => r.cost <= remaining);
       if (candidates.length === 0) break;
 
-      const minCount       = Math.min(...candidates.map(r => counts[r.idx]));
-      const evenCandidates = candidates.filter(r => counts[r.idx] === minCount);
+      // Pick the candidate with the lowest dollar allocation (balance by $)
+      const minDollar       = Math.min(...candidates.map(r => dollarAlloc(r.idx)));
+      const evenCandidates  = candidates.filter(r => dollarAlloc(r.idx) === minDollar);
 
       let best = null, bestDelta = Infinity;
       for (const r of evenCandidates) {
@@ -547,24 +668,165 @@
   // ── State ──────────────────────────────────────────────────
   let enhanced = true;
   let rowId = 0;
+  let acctId = 0;
+  let accounts = [];
 
   // ── DOM refs ───────────────────────────────────────────────
-  const cashInput    = document.getElementById('cash-input');
   const modeToggle   = document.getElementById('mode-toggle');
   const modeLabelB   = document.getElementById('mode-label-basic');
   const modeLabelE   = document.getElementById('mode-label-enhanced');
+  const tableHead    = document.getElementById('table-head');
   const tableBody    = document.getElementById('table-body');
   const btnAddRow    = document.getElementById('btn-add-row');
   const btnReset     = document.getElementById('btn-reset');
-  const statUsed     = document.getElementById('stat-used');
-  const statRemaining= document.getElementById('stat-remaining');
-  const statPremium  = document.getElementById('stat-premium');
-  const statPct      = document.getElementById('stat-pct');
-  const meterFill    = document.getElementById('meter-fill');
+  const accountsList = document.getElementById('accounts-list');
+  const btnAddAcct   = document.getElementById('btn-add-acct');
+  const summariesWrap = document.getElementById('summaries-wrap');
+  const fundsSection  = document.getElementById('funds-needed-section');
+  const fundsContent  = document.getElementById('funds-needed-content');
+
+  // ── Account management ─────────────────────────────────────
+  function addAccount(name = '', cash = '') {
+    const id = ++acctId;
+    accounts.push({ id, name, cash: parseFloat(cash) || 0 });
+    renderAccountRow(accounts[accounts.length - 1]);
+    rebuildTableHeader();
+    rebuildTableRowCells();
+    recalculate();
+  }
+
+  function removeAccount(id) {
+    accounts = accounts.filter(a => a.id !== id);
+    const el = document.querySelector(`.accounts-row[data-acct-id="${id}"]`);
+    if (el) el.remove();
+    rebuildTableHeader();
+    rebuildTableRowCells();
+    recalculate();
+  }
+
+  function renderAccountRow(acct) {
+    const div = document.createElement('div');
+    div.className = 'accounts-row';
+    div.dataset.acctId = acct.id;
+
+    const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    div.innerHTML = `
+      <input type="text" class="acct-name" placeholder="Account name" value="${acct.name}" />
+      <input type="number" class="acct-cash" min="0" step="100" placeholder="e.g. 10000" value="${acct.cash || ''}" />
+      <span class="pos-hint" data-acct-id="${acct.id}">8–12%: —</span>
+      <button class="btn-remove-acct" title="Remove account">✕</button>
+    `;
+
+    div.querySelector('.acct-name').addEventListener('input', e => {
+      acct.name = e.target.value.trim();
+      rebuildTableHeader();
+      recalculate();
+    });
+
+    div.querySelector('.acct-cash').addEventListener('input', e => {
+      acct.cash = parseFloat(e.target.value) || 0;
+      recalculate();
+    });
+
+    div.querySelector('.btn-remove-acct').addEventListener('click', () => {
+      removeAccount(acct.id);
+    });
+
+    accountsList.appendChild(div);
+  }
+
+  // ── Dynamic table header ───────────────────────────────────
+  function rebuildTableHeader() {
+    let html = '<tr>';
+    html += '<th>Ticker</th><th>Type</th><th>Strike ($)</th><th>Premium ($)</th><th>Cost / Contract</th>';
+    accounts.forEach(acct => {
+      const name = acct.name || `Acct ${acct.id}`;
+      html += `<th class="acct-group">${name}<br>Contracts</th>`;
+      html += `<th class="acct-group">${name}<br>Total</th>`;
+      html += `<th class="acct-group">${name}<br>%</th>`;
+    });
+    html += '<th></th></tr>';
+    tableHead.innerHTML = html;
+  }
+
+  // ── Rebuild per-account cells in existing rows ─────────────
+  function rebuildTableRowCells() {
+    tableBody.querySelectorAll('tr[data-id]').forEach(tr => {
+      // Remove old account cells (everything after col-cost and before btn-remove)
+      const costCell = tr.querySelector('.col-cost');
+      const removeCell = tr.querySelector('.cell-remove');
+      // Remove all cells after cost and before remove
+      while (costCell.nextElementSibling && costCell.nextElementSibling !== removeCell) {
+        costCell.nextElementSibling.remove();
+      }
+      // Insert per-account cells
+      accounts.forEach(acct => {
+        const recTd = document.createElement('td');
+        recTd.className = `col-rec empty acct-rec-${acct.id}`;
+        recTd.textContent = '—';
+
+        const totalTd = document.createElement('td');
+        totalTd.className = `col-total acct-total-${acct.id}`;
+        totalTd.textContent = '—';
+
+        const pctTd = document.createElement('td');
+        pctTd.className = `col-pct acct-pct-${acct.id}`;
+        pctTd.textContent = '—';
+
+        tr.insertBefore(recTd, removeCell);
+        tr.insertBefore(totalTd, removeCell);
+        tr.insertBefore(pctTd, removeCell);
+      });
+    });
+  }
+
+  // ── Row factory ────────────────────────────────────────────
+  function createRow(ticker = '', type = 'put', strike = '', premium = '') {
+    const id = ++rowId;
+    const tr = document.createElement('tr');
+    tr.dataset.id = id;
+
+    // Base cells
+    let html = `
+      <td><input class="inp-ticker" type="text" placeholder="AAPL" value="${ticker}" /></td>
+      <td>
+        <select class="inp-type">
+          <option value="put"  ${type === 'put'  ? 'selected' : ''}>Put</option>
+          <option value="call" ${type === 'call' ? 'selected' : ''}>Call</option>
+        </select>
+      </td>
+      <td><input class="inp-strike"  type="number" min="0" step="0.5"  placeholder="150" value="${strike}" /></td>
+      <td><input class="inp-premium" type="number" min="0" step="0.01" placeholder="1.50" value="${premium}" /></td>
+      <td class="col-cost">—</td>`;
+
+    // Per-account cells
+    accounts.forEach(acct => {
+      html += `<td class="col-rec empty acct-rec-${acct.id}">—</td>`;
+      html += `<td class="col-total acct-total-${acct.id}">—</td>`;
+      html += `<td class="col-pct acct-pct-${acct.id}">—</td>`;
+    });
+
+    html += `<td class="cell-remove"><button class="btn-remove" title="Remove row">✕</button></td>`;
+    tr.innerHTML = html;
+
+    tr.querySelectorAll('input, select').forEach(el =>
+      el.addEventListener('input', recalculate)
+    );
+    tr.querySelector('.btn-remove').addEventListener('click', () => {
+      tr.remove();
+      recalculate();
+    });
+
+    return tr;
+  }
+
+  function addRow(ticker, type, strike, premium) {
+    tableBody.appendChild(createRow(ticker, type, strike, premium));
+  }
 
   // ── Recalculate ────────────────────────────────────────────
   function recalculate() {
-    const cash = parseFloat(cashInput.value) || 0;
     const rows = [];
 
     tableBody.querySelectorAll('tr[data-id]').forEach(tr => {
@@ -576,7 +838,7 @@
       rows.push({ ticker, type, strike, premium, cost, tr });
     });
 
-    // Update Cost/Contract cells for all rows
+    // Update Cost/Contract cells
     rows.forEach(r => {
       const cell = r.tr.querySelector('.col-cost');
       if (r.strike === 0) {
@@ -591,101 +853,203 @@
       }
     });
 
-    // Only rows with a strike entered participate in the optimizer
     const activeRows = rows.filter(r => r.strike > 0);
-    const counts = optimize(activeRows, cash);
 
-    // Update Recommended Contracts and Total Cost cells
+    // Run optimizer per account
+    const results = accounts.map(acct => {
+      const counts = optimize(activeRows, acct.cash);
+      const totalUsed = activeRows.reduce((sum, r, i) => sum + r.cost * counts[i], 0);
+      const totalPremium = activeRows.reduce((sum, r, i) => sum + r.premium * 100 * counts[i], 0);
+      return { acct, counts, totalUsed, totalPremium };
+    });
+
+    // Update per-account cells in each row
     rows.forEach(r => {
-      const recCell   = r.tr.querySelector('.col-rec');
-      const totalCell = r.tr.querySelector('.col-total');
-      const idx = activeRows.indexOf(r);
-      if (idx >= 0 && counts[idx] > 0) {
-        recCell.textContent = counts[idx];
-        recCell.classList.remove('empty');
-        totalCell.textContent = '$' + (r.cost * counts[idx]).toLocaleString('en-US', {
-          minimumFractionDigits: 2, maximumFractionDigits: 2
-        });
-      } else {
-        recCell.textContent  = '—';
-        recCell.classList.add('empty');
-        totalCell.textContent = '—';
+      accounts.forEach((acct, ai) => {
+        const recCell   = r.tr.querySelector(`.acct-rec-${acct.id}`);
+        const totalCell = r.tr.querySelector(`.acct-total-${acct.id}`);
+        const pctCell   = r.tr.querySelector(`.acct-pct-${acct.id}`);
+        if (!recCell) return; // safety
+
+        const idx = activeRows.indexOf(r);
+        const count = (idx >= 0) ? results[ai].counts[idx] : 0;
+
+        if (count > 0) {
+          recCell.textContent = count;
+          recCell.classList.remove('empty');
+          const rowTotal = r.cost * count;
+          totalCell.textContent = '$' + rowTotal.toLocaleString('en-US', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+          });
+          pctCell.textContent = acct.cash > 0
+            ? (rowTotal / acct.cash * 100).toFixed(1) + '%' : '—';
+        } else {
+          recCell.textContent = '—';
+          recCell.classList.add('empty');
+          totalCell.textContent = '—';
+          pctCell.textContent = '—';
+        }
+      });
+    });
+
+    // Update position size hints per account
+    accounts.forEach(acct => {
+      const hint = document.querySelector(`.pos-hint[data-acct-id="${acct.id}"]`);
+      if (hint) {
+        if (acct.cash > 0) {
+          const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+          hint.textContent = `8–12%: ${fmt(acct.cash * 0.08)} – ${fmt(acct.cash * 0.12)}`;
+        } else {
+          hint.textContent = '8–12%: —';
+        }
       }
     });
 
-    // Compute totals from active rows only
-    const totalUsed    = activeRows.reduce((sum, r, i) => sum + r.cost * counts[i], 0);
-    const totalPremium = activeRows.reduce((sum, r, i) => sum + r.premium * 100 * counts[i], 0);
-    const pct          = cash > 0 ? (totalUsed / cash) * 100 : 0;
-    const remaining    = cash - totalUsed;
+    // Render per-account summaries
+    renderSummaries(results);
 
-    if (cash > 0) {
-      statUsed.textContent = '$' + totalUsed.toLocaleString('en-US', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-      });
-      statRemaining.textContent = '$' + remaining.toLocaleString('en-US', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-      });
-      statPremium.textContent = '$' + totalPremium.toLocaleString('en-US', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-      });
-
-      const pctStr = pct.toFixed(1) + '%';
-      statPct.textContent = pctStr;
-
-      const grade = pct >= 95 ? 'good' : pct >= 80 ? 'okay' : 'low';
-      statPct.className   = 'alloc-pct ' + grade;
-      meterFill.className = 'meter-fill ' + grade;
-      meterFill.style.width = Math.min(pct, 100) + '%';
-    } else {
-      statUsed.textContent      = '$—';
-      statRemaining.textContent = '$—';
-      statPremium.textContent   = '$—';
-      statPct.textContent       = '—%';
-      statPct.className         = 'alloc-pct none';
-      meterFill.className       = 'meter-fill';
-      meterFill.style.width     = '0%';
-    }
+    // Render funds-needed per account
+    renderFundsNeeded(activeRows, results);
   }
 
-  // ── Row factory ────────────────────────────────────────────
-  function createRow(ticker = '', type = 'put', strike = '', premium = '') {
-    const id = ++rowId;
-    const tr = document.createElement('tr');
-    tr.dataset.id = id;
+  // ── Render per-account summaries ───────────────────────────
+  function renderSummaries(results) {
+    summariesWrap.innerHTML = '';
+    results.forEach(({ acct, totalUsed, totalPremium }) => {
+      const cash = acct.cash;
+      const pct = cash > 0 ? (totalUsed / cash) * 100 : 0;
+      const remaining = cash - totalUsed;
+      const grade = pct >= 95 ? 'good' : pct >= 80 ? 'okay' : 'low';
+      const name = acct.name || `Account ${acct.id}`;
 
-    tr.innerHTML = `
-      <td><input class="inp-ticker" type="text" placeholder="AAPL" value="${ticker}" /></td>
-      <td>
-        <select class="inp-type">
-          <option value="put"  ${type === 'put'  ? 'selected' : ''}>Put</option>
-          <option value="call" ${type === 'call' ? 'selected' : ''}>Call</option>
-        </select>
-      </td>
-      <td><input class="inp-strike"  type="number" min="0" step="0.5"  placeholder="150" value="${strike}" /></td>
-      <td><input class="inp-premium" type="number" min="0" step="0.01" placeholder="1.50" value="${premium}" /></td>
-      <td class="col-cost">—</td>
-      <td class="col-rec empty">—</td>
-      <td class="col-total">—</td>
-      <td><button class="btn-remove" title="Remove row">✕</button></td>
-    `;
+      const div = document.createElement('div');
+      div.className = 'summary';
+      div.innerHTML = `
+        <span class="summary-name">${name}</span>
+        <div class="summary-stat">
+          <span class="stat-label">Allocated</span>
+          <span class="stat-value">${cash > 0 ? '$' + totalUsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '$—'}</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">Remaining</span>
+          <span class="stat-value">${cash > 0 ? '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '$—'}</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">Premium</span>
+          <span class="stat-value">${cash > 0 ? '$' + totalPremium.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '$—'}</span>
+        </div>
+        <span class="alloc-pct ${cash > 0 ? grade : 'none'}">${cash > 0 ? pct.toFixed(1) + '%' : '—%'}</span>
+        <div class="meter-wrap">
+          <div class="meter-label"><span>0%</span><span>100%</span></div>
+          <div class="meter-track">
+            <div class="meter-fill ${cash > 0 ? grade : ''}" style="width:${cash > 0 ? Math.min(pct, 100) : 0}%"></div>
+          </div>
+        </div>
+      `;
+      summariesWrap.appendChild(div);
+    });
+  }
 
-    // Per-cell input listeners
-    tr.querySelectorAll('input, select').forEach(el =>
-      el.addEventListener('input', recalculate)
-    );
+  // ── Funds needed — per account ─────────────────────────────
+  function renderFundsNeeded(activeRows, results) {
+    fundsContent.innerHTML = '';
+    let anyShown = false;
 
-    // Remove button
-    tr.querySelector('.btn-remove').addEventListener('click', () => {
-      tr.remove();
-      recalculate();
+    results.forEach(({ acct, counts, totalUsed }) => {
+      const cash = acct.cash;
+      if (activeRows.length === 0 || cash <= 0) return;
+
+      const payingRows = activeRows.filter(r => r.cost > 0);
+      if (payingRows.length === 0) return;
+
+      const currentPct    = totalUsed / cash;
+      const maxSingleCost = Math.max(...payingRows.map(r => r.cost));
+      const searchCeil    = Math.min(maxSingleCost + 1, 50000);
+      const minCost       = Math.min(...payingRows.map(r => r.cost));
+
+      // Generate candidates
+      const candidateSet = new Set();
+      for (const r of payingRows) {
+        const c = r.cost;
+        const kMin = Math.floor(cash / c) + 1;
+        const kMax = Math.ceil((cash + searchCeil) / c);
+        for (let k = kMin; k <= kMax; k++) {
+          const x = Math.ceil((k * c - cash) * 100) / 100;
+          if (x > 0 && x <= searchCeil) candidateSet.add(x);
+        }
+      }
+      const denseCeil = Math.min(minCost, 1000);
+      for (let x = 1; x <= denseCeil; x++) candidateSet.add(x);
+
+      let bestX = null, bestPct = currentPct, bestCounts = null, bestNewUsed = 0;
+      const candidates = Array.from(candidateSet).sort((a, b) => a - b);
+
+      for (const x of candidates) {
+        const trialCash      = cash + x;
+        const trialCounts    = optimize(activeRows, trialCash);
+        const trialUsed      = activeRows.reduce((s, r, i) => s + r.cost * trialCounts[i], 0);
+        const trialPct       = trialUsed / trialCash;
+        const trialRemaining = trialCash - trialUsed;
+
+        if (trialPct > currentPct + 1e-9 && trialRemaining < minCost - 1e-6) {
+          bestX = x; bestPct = trialPct; bestCounts = trialCounts; bestNewUsed = trialUsed;
+          break;
+        }
+        if (trialPct > bestPct + 1e-9) {
+          bestPct = trialPct; bestX = x; bestCounts = trialCounts; bestNewUsed = trialUsed;
+        }
+      }
+
+      const name = acct.name || `Account ${acct.id}`;
+      const block = document.createElement('div');
+      block.className = 'funds-acct-block';
+
+      if (bestX === null) {
+        block.innerHTML = `
+          <div class="funds-acct-name">${name}</div>
+          <div class="funds-needed-header">
+            <span class="funds-needed-amount" style="color:#48bb78">Already optimal</span>
+          </div>
+          <p class="funds-needed-sub">No addition within one contract's cost improves utilisation.</p>
+        `;
+      } else {
+        const fmtNeeded = bestX.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const finalCash  = cash + bestX;
+        const finalTotal = bestCounts.reduce((s, c) => s + c, 0);
+        const newPct     = ((bestNewUsed / finalCash) * 100).toFixed(1);
+
+        let tableHtml = `<table class="funds-needed-table"><thead><tr>
+          <th>Ticker</th><th>Type</th><th>Now → New</th><th>Change</th>
+        </tr></thead><tbody>`;
+
+        activeRows.forEach((r, i) => {
+          const before = counts[i] || 0;
+          const after  = bestCounts[i] || 0;
+          if (before === 0 && after === 0) return;
+          const delta = after - before;
+          const badgeClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same';
+          const badgeText  = delta > 0 ? `+${delta}` : delta < 0 ? String(delta) : '—';
+          const label = r.ticker || `Row ${i + 1}`;
+          const typeLabel = r.type.charAt(0).toUpperCase() + r.type.slice(1);
+          tableHtml += `<tr><td>${label}</td><td>${typeLabel}</td><td>${before} → ${after}</td><td><span class="change-badge ${badgeClass}">${badgeText}</span></td></tr>`;
+        });
+        tableHtml += '</tbody></table>';
+
+        block.innerHTML = `
+          <div class="funds-acct-name">${name}</div>
+          <div class="funds-needed-header">
+            <span class="funds-needed-amount">+$${fmtNeeded}</span>
+          </div>
+          <p class="funds-needed-sub">Adding $${fmtNeeded} gives ${finalTotal} contracts at ${newPct}% utilisation ($${bestNewUsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of $${finalCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).</p>
+          ${tableHtml}
+        `;
+      }
+
+      fundsContent.appendChild(block);
+      anyShown = true;
     });
 
-    return tr;
-  }
-
-  function addRow(ticker, type, strike, premium) {
-    tableBody.appendChild(createRow(ticker, type, strike, premium));
+    fundsSection.style.display = anyShown ? 'block' : 'none';
   }
 
   // ── Mode toggle ────────────────────────────────────────────
@@ -703,16 +1067,22 @@
   });
 
   btnReset.addEventListener('click', () => {
-    cashInput.value = '';
     tableBody.innerHTML = '';
     rowId = 0;
     for (let i = 0; i < 10; i++) addRow();
     recalculate();
   });
 
-  cashInput.addEventListener('input', recalculate);
+  btnAddAcct.addEventListener('click', () => {
+    addAccount('', '');
+  });
 
   // ── Init ───────────────────────────────────────────────────
+  // Seed with 3 accounts
+  addAccount('Account 1', '');
+  addAccount('Account 2', '');
+  addAccount('Account 3', '');
+
   // Seed with 10 empty rows
   for (let i = 0; i < 10; i++) addRow();
   recalculate();
