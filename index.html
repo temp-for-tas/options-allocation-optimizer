@@ -686,9 +686,9 @@
   const fundsContent  = document.getElementById('funds-needed-content');
 
   // ── Account management ─────────────────────────────────────
-  function addAccount(name = '', cash = '') {
+  function addAccount(name = '', accountValue = '', cash = '') {
     const id = ++acctId;
-    accounts.push({ id, name, cash: parseFloat(cash) || 0 });
+    accounts.push({ id, name, accountValue: parseFloat(accountValue) || 0, cash: parseFloat(cash) || 0 });
     renderAccountRow(accounts[accounts.length - 1]);
     rebuildTableHeader();
     rebuildTableRowCells();
@@ -709,11 +709,12 @@
     div.className = 'accounts-row';
     div.dataset.acctId = acct.id;
 
-    const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
     div.innerHTML = `
       <input type="text" class="acct-name" placeholder="Account name" value="${acct.name}" />
-      <input type="number" class="acct-cash" min="0" step="100" placeholder="e.g. 10000" value="${acct.cash || ''}" />
+      <label style="font-size:0.75rem;color:#64748b">Value:</label>
+      <input type="number" class="acct-value" min="0" step="100" placeholder="Account Value" value="${acct.accountValue || ''}" />
+      <label style="font-size:0.75rem;color:#64748b">Available:</label>
+      <input type="number" class="acct-cash" min="0" step="100" placeholder="Available for Trade" value="${acct.cash || ''}" />
       <span class="pos-hint" data-acct-id="${acct.id}">8–12%: —</span>
       <button class="btn-remove-acct" title="Remove account">✕</button>
     `;
@@ -721,6 +722,11 @@
     div.querySelector('.acct-name').addEventListener('input', e => {
       acct.name = e.target.value.trim();
       rebuildTableHeader();
+      recalculate();
+    });
+
+    div.querySelector('.acct-value').addEventListener('input', e => {
+      acct.accountValue = parseFloat(e.target.value) || 0;
       recalculate();
     });
 
@@ -881,8 +887,8 @@
           totalCell.textContent = '$' + rowTotal.toLocaleString('en-US', {
             minimumFractionDigits: 2, maximumFractionDigits: 2
           });
-          pctCell.textContent = acct.cash > 0
-            ? (rowTotal / acct.cash * 100).toFixed(1) + '%' : '—';
+          pctCell.textContent = acct.accountValue > 0
+            ? (rowTotal / acct.accountValue * 100).toFixed(1) + '%' : '—';
         } else {
           recCell.textContent = '—';
           recCell.classList.add('empty');
@@ -892,13 +898,13 @@
       });
     });
 
-    // Update position size hints per account
+    // Update position size hints per account (uses accountValue)
     accounts.forEach(acct => {
       const hint = document.querySelector(`.pos-hint[data-acct-id="${acct.id}"]`);
       if (hint) {
-        if (acct.cash > 0) {
+        if (acct.accountValue > 0) {
           const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-          hint.textContent = `8–12%: ${fmt(acct.cash * 0.08)} – ${fmt(acct.cash * 0.12)}`;
+          hint.textContent = `8–12%: ${fmt(acct.accountValue * 0.08)} – ${fmt(acct.accountValue * 0.12)}`;
         } else {
           hint.textContent = '8–12%: —';
         }
@@ -1074,14 +1080,14 @@
   });
 
   btnAddAcct.addEventListener('click', () => {
-    addAccount('', '');
+    addAccount('', '', '');
   });
 
   // ── Init ───────────────────────────────────────────────────
   // Seed with 3 accounts
-  addAccount('Account 1', '');
-  addAccount('Account 2', '');
-  addAccount('Account 3', '');
+  addAccount('Account 1', '', '');
+  addAccount('Account 2', '', '');
+  addAccount('Account 3', '', '');
 
   // Seed with 10 empty rows
   for (let i = 0; i < 10; i++) addRow();
