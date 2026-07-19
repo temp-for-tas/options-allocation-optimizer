@@ -944,6 +944,10 @@
           <span class="stat-label">Premium</span>
           <span class="stat-value">${cash > 0 ? '$' + totalPremium.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '$—'}</span>
         </div>
+        <div class="summary-stat">
+          <span class="stat-label">Premium %</span>
+          <span class="stat-value">${cash > 0 && totalUsed > 0 ? (totalPremium / totalUsed * 100).toFixed(2) + '%' : '—'}</span>
+        </div>
         <span class="alloc-pct ${cash > 0 ? grade : 'none'}">${cash > 0 ? pct.toFixed(1) + '%' : '—%'}</span>
         <div class="meter-wrap">
           <div class="meter-label"><span>0%</span><span>100%</span></div>
