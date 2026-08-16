@@ -38,7 +38,7 @@ where `cost_i` is the net cash cost of one contract of ticker `i` and `n_i` is t
 | Budget | `Σ (cost_i × n_i) ≤ available_cash` | Don't exceed account cash |
 | Minimum 1 | `n_i ≥ 1` for all i (when affordable) | Every ticker gets at least one contract |
 | Upper bound | `n_i ≤ floor(budget / cost_i)` | No single ticker can exceed what the budget could theoretically support |
-| Dollar evenness | `maxD - minD ≤ max(cost_i)` | The largest dollar position minus the smallest must be within one contract's cost of the most expensive ticker |
+| Dollar evenness | `maxD - minD ≤ dollarTolerance` | Positions must stay within a tight dollar spread of each other (see below) |
 | Integrality | `n_i ∈ integers` | Can't buy fractional contracts |
 
 ### Dollar Balance
@@ -48,7 +48,19 @@ The solver tracks two continuous auxiliary variables:
 - `maxD` — the largest dollar allocation across all tickers (`≥ cost_i × n_i` for all i)
 - `minD` — the smallest dollar allocation across all tickers (`≤ cost_i × n_i` for all i)
 
-The hard constraint `maxD - minD ≤ dollarTolerance` forces positions to stay within one expensive contract's cost of each other in dollar terms. A tiny epsilon penalty on the spread (`-ε × maxD + ε × minD` added to the objective) further tightens balance when multiple solutions have the same total allocation.
+The hard constraint `maxD - minD ≤ dollarTolerance` forces positions to stay balanced. The tolerance is computed as:
+
+```
+idealShare   = budget / numTickers
+baseTolerance = min(avgCost, idealShare × 0.5)
+dollarTolerance = max(baseTolerance, maxCost × 0.25)
+```
+
+This targets an even split of the budget across positions, while ensuring the tolerance never drops below 25% of the most expensive contract's cost (to stay feasible with integer constraints).
+
+If the tight tolerance produces an infeasible model, the solver progressively relaxes through `[dollarTolerance, maxCost × 0.5, maxCost × 0.75, maxCost, budget]` until a feasible solution is found.
+
+A balance penalty scaled as `1 / (budget + 1)` is applied to the spread (`-ε × maxD + ε × minD` in the objective) so the solver actively minimizes position imbalance rather than treating it as a pure tiebreaker.
 
 ### Greedy Fallback
 
