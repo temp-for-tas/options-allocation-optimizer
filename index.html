@@ -564,14 +564,23 @@
         const ub  = activeIdx.map(i => Math.floor(budget / rows[i].cost));
 
         // Evenness tolerance: allow dollar allocations per ticker to differ
-        // by at most the cost of the most expensive single contract.
-        // This keeps positions balanced in dollar terms while giving the
-        // solver room to fill the budget.
+        // by at most the average cost across active positions. This forces
+        // much tighter balance than the old maxCost approach while still
+        // giving the solver room to fill odd gaps with integer contracts.
+        // If the tight tolerance is infeasible, we progressively relax.
         const costs = activeIdx.map(i => rows[i].cost);
         const maxCost = Math.max(...costs);
-        const dollarTolerance = maxCost;
+        const avgCost = costs.reduce((a, b) => a + b, 0) / costs.length;
+        const idealShare = budget / activeIdx.length;
+        // Use the smaller of avgCost or 50% of the ideal equal share,
+        // but floor at the max single contract cost × 0.25 to stay feasible
+        const baseTolerance = Math.min(avgCost, idealShare * 0.5);
+        let dollarTolerance = Math.max(baseTolerance, maxCost * 0.25);
 
-        const EPS = 1e-6; // tiny penalty to prefer tighter balance when equal
+        // Balance penalty: meaningful weight so the solver actively
+        // minimises spread, not just as a tiebreaker.
+        // Scaled relative to costs so it doesn't dominate the allocation objective.
+        const EPS = 1 / (budget + 1);
 
         const model = {
           optimize: 'obj', opType: 'max',
@@ -620,12 +629,17 @@
           model.variables['minD'][minKey] = -1;
         });
 
-        const result = solver.Solve(model);
-        if (result.feasible) {
-          activeIdx.forEach((rowIdx, j) => {
-            counts[rowIdx] = Math.round(result[`x${j}`] || 0);
-          });
-          return counts;
+        // Try with tight tolerance first; if infeasible, progressively relax
+        const toleranceSteps = [dollarTolerance, maxCost * 0.5, maxCost * 0.75, maxCost, budget];
+        for (const tol of toleranceSteps) {
+          model.constraints['dollarEven'] = { max: tol };
+          const result = solver.Solve(model);
+          if (result.feasible) {
+            activeIdx.forEach((rowIdx, j) => {
+              counts[rowIdx] = Math.round(result[`x${j}`] || 0);
+            });
+            return counts;
+          }
         }
       } catch (e) {
         console.warn('ILP solver error, falling back to greedy:', e);
