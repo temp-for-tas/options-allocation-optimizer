@@ -576,11 +576,12 @@
         const avgCost = affordableCosts.length > 0
           ? affordableCosts.reduce((a, b) => a + b, 0) / affordableCosts.length
           : costs.reduce((a, b) => a + b, 0) / costs.length;
-        const idealShare = budget / (affordableCosts.length || 1);
-        // Use the smaller of avgCost or 50% of the ideal equal share,
-        // but floor at the max single contract cost × 0.25 to stay feasible
-        const baseTolerance = Math.min(avgCost, idealShare * 0.5);
-        let dollarTolerance = Math.max(baseTolerance, maxCost * 0.25);
+        // Tolerance = average contract cost among affordable tickers.
+        // This keeps positions within roughly one average contract of each
+        // other in dollar terms — tight enough for balance, loose enough
+        // that the ILP can fill the budget well. Phase 2 greedy fill
+        // handles any remaining slack.
+        let dollarTolerance = Math.max(avgCost, maxCost * 0.25);
 
         // Balance penalty: meaningful weight so the solver actively
         // minimises spread, not just as a tiebreaker.
