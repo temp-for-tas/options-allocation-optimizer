@@ -62,6 +62,16 @@ If the tight tolerance produces an infeasible model, the solver progressively re
 
 A balance penalty scaled as `1 / (budget + 1)` is applied to the spread (`-ε × maxD + ε × minD` in the objective) so the solver actively minimizes position imbalance rather than treating it as a pure tiebreaker.
 
+### Phase 2: Greedy Fill
+
+The tight balance constraint in phase 1 may leave budget unspent (remaining cash can still afford contracts, but adding them would violate the evenness tolerance). Phase 2 greedily fills that gap:
+
+1. Compute remaining cash after the balanced ILP solution.
+2. Among tickers whose contract cost fits in the remaining cash, pick the one with the **lowest current dollar allocation**.
+3. Add one contract to that ticker and repeat until no contract fits.
+
+This two-phase design keeps the bulk of the allocation balanced while maximizing utilization. The imbalance introduced by phase 2 is naturally bounded by how little budget remains after the balanced pass.
+
 ### Greedy Fallback
 
 If the ILP solver is unavailable or produces an infeasible result, a greedy algorithm takes over:
