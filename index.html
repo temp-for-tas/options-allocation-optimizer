@@ -563,15 +563,20 @@
 
         const ub  = activeIdx.map(i => Math.floor(budget / rows[i].cost));
 
-        // Evenness tolerance: allow dollar allocations per ticker to differ
-        // by at most the average cost across active positions. This forces
-        // much tighter balance than the old maxCost approach while still
-        // giving the solver room to fill odd gaps with integer contracts.
-        // If the tight tolerance is infeasible, we progressively relax.
+        // Evenness tolerance: computed only over tickers that can actually
+        // fit in this account (cost ≤ budget). Unaffordable tickers are
+        // excluded from balance tracking entirely.
         const costs = activeIdx.map(i => rows[i].cost);
-        const maxCost = Math.max(...costs);
-        const avgCost = costs.reduce((a, b) => a + b, 0) / costs.length;
-        const idealShare = budget / activeIdx.length;
+        const affordableCosts = activeIdx
+          .map(i => rows[i].cost)
+          .filter(c => c <= budget);
+        const maxCost = affordableCosts.length > 0
+          ? Math.max(...affordableCosts)
+          : Math.max(...costs);
+        const avgCost = affordableCosts.length > 0
+          ? affordableCosts.reduce((a, b) => a + b, 0) / affordableCosts.length
+          : costs.reduce((a, b) => a + b, 0) / costs.length;
+        const idealShare = budget / (affordableCosts.length || 1);
         // Use the smaller of avgCost or 50% of the ideal equal share,
         // but floor at the max single contract cost × 0.25 to stay feasible
         const baseTolerance = Math.min(avgCost, idealShare * 0.5);
@@ -600,6 +605,16 @@
         model.variables['maxD']['dollarEven'] = 1;
         model.variables['minD']['dollarEven'] = -1;
 
+        // Determine which tickers can receive ≥1 contract in this account.
+        // Only those participate in the minD (lower-bound) balance tracking.
+        // Tickers that may get 0 contracts (too expensive) must not drag
+        // minD to 0 and artificially cap all other positions.
+        const affordableSet = new Set(
+          activeIdx.map((rowIdx, j) => ({ j, cost: rows[rowIdx].cost }))
+            .filter(r => r.cost <= budget)
+            .map(r => r.j)
+        );
+
         activeIdx.forEach((rowIdx, j) => {
           const v = `x${j}`;
           const c = rows[rowIdx].cost;
@@ -617,16 +632,25 @@
           model.variables[v][ubKey] = 1;
 
           // maxD >= c * x_j  →  maxD - c*x_j >= 0
-          const maxKey = `maxD_${j}`;
-          model.constraints[maxKey] = { min: 0 };
-          model.variables['maxD'][maxKey] = 1;
-          model.variables[v][maxKey] = -c;
+          // Only track for affordable tickers; unaffordable ones get 0
+          // contracts and would otherwise force maxD ≥ 0 (harmless but
+          // we skip for clarity).
+          if (affordableSet.has(j)) {
+            const maxKey = `maxD_${j}`;
+            model.constraints[maxKey] = { min: 0 };
+            model.variables['maxD'][maxKey] = 1;
+            model.variables[v][maxKey] = -c;
+          }
 
-          // minD <= c * x_j  →  c*x_j - minD >= 0
-          const minKey = `minD_${j}`;
-          model.constraints[minKey] = { min: 0 };
-          model.variables[v][minKey] = c;
-          model.variables['minD'][minKey] = -1;
+          // minD <= c * x_j  →  only for affordable tickers.
+          // If a ticker might get 0 contracts, including it would force
+          // minD ≤ 0 and cripple the balance constraint for all others.
+          if (affordableSet.has(j)) {
+            const minKey = `minD_${j}`;
+            model.constraints[minKey] = { min: 0 };
+            model.variables[v][minKey] = c;
+            model.variables['minD'][minKey] = -1;
+          }
         });
 
         // Try with tight tolerance first; if infeasible, progressively relax
