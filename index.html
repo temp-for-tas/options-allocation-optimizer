@@ -638,6 +638,26 @@
             activeIdx.forEach((rowIdx, j) => {
               counts[rowIdx] = Math.round(result[`x${j}`] || 0);
             });
+            // ── Phase 2: greedy fill ──────────────────────────────
+            // The balanced ILP may leave budget on the table. Greedily add
+            // contracts one at a time, picking whichever affordable ticker
+            // has the lowest current dollar allocation. This maximises
+            // utilisation while keeping the bulk of the allocation balanced.
+            const used = () => rows.reduce((s, r, i) => s + r.cost * counts[i], 0);
+            let filling = true;
+            while (filling) {
+              filling = false;
+              const remaining = availableCash - used();
+              const affordable = activeIdx.filter(i => rows[i].cost <= remaining);
+              if (affordable.length === 0) break;
+              // Pick the ticker with the lowest dollar allocation
+              let minAlloc = Infinity, pick = -1;
+              for (const i of affordable) {
+                const alloc = rows[i].cost * counts[i];
+                if (alloc < minAlloc) { minAlloc = alloc; pick = i; }
+              }
+              if (pick >= 0) { counts[pick]++; filling = true; }
+            }
             return counts;
           }
         }
