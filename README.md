@@ -51,12 +51,12 @@ The solver tracks two continuous auxiliary variables:
 The hard constraint `maxD - minD ≤ dollarTolerance` forces positions to stay balanced. The tolerance is computed as:
 
 ```
-idealShare   = budget / numTickers
-baseTolerance = min(avgCost, idealShare × 0.5)
-dollarTolerance = max(baseTolerance, maxCost × 0.25)
+dollarTolerance = max(avgCost, maxCost × 0.25)
 ```
 
-This targets an even split of the budget across positions, while ensuring the tolerance never drops below 25% of the most expensive contract's cost (to stay feasible with integer constraints).
+where `avgCost` and `maxCost` are calculated only over **affordable** tickers (those with cost ≤ budget). Tickers too expensive for the account are excluded from balance tracking entirely, so they don't artificially distort the constraint.
+
+This keeps positions within roughly one average contract's cost of each other in dollar terms — tight enough for meaningful balance, loose enough that the ILP can fill the budget well.
 
 If the tight tolerance produces an infeasible model, the solver progressively relaxes through `[dollarTolerance, maxCost × 0.5, maxCost × 0.75, maxCost, budget]` until a feasible solution is found.
 
