@@ -461,6 +461,71 @@
       color: #4f8ef7;
       margin-bottom: 4px;
     }
+
+    /* ── Rolling calculator ── */
+    .roll-calc {
+      margin-top: 24px;
+      background: #181d2a;
+      border: 1px solid #2d3548;
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .roll-calc h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #4a5568;
+      margin-bottom: 12px;
+    }
+    .roll-calc-inputs {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .roll-calc-inputs .field-group label {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .roll-calc-inputs input[type="number"] {
+      width: 120px;
+    }
+    .roll-result {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      min-height: 44px;
+    }
+    .roll-result.neutral {
+      background: #1e2330;
+      color: #64748b;
+    }
+    .roll-result.safe {
+      background: #1a2e23;
+      border: 1px solid #276749;
+      color: #48bb78;
+    }
+    .roll-result.warn {
+      background: #2a2412;
+      border: 1px solid #6b5a1e;
+      color: #ecc94b;
+    }
+    .roll-result.danger {
+      background: #2d1f1f;
+      border: 1px solid #4a2828;
+      color: #f56565;
+    }
+    .roll-result .roll-date {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .roll-result .roll-detail {
+      font-size: 0.8rem;
+      margin-top: 4px;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
@@ -514,6 +579,24 @@
     <span class="funds-needed-title">Funds to Reach Full Utilisation</span>
   </div>
   <div id="funds-needed-content"></div>
+</div>
+
+<!-- ── Rolling calculator ── -->
+<div class="roll-calc">
+  <h2>Rolling Calculator</h2>
+  <div class="roll-calc-inputs">
+    <div class="field-group">
+      <label for="roll-strike">Put Strike ($)</label>
+      <input type="number" id="roll-strike" placeholder="e.g. 150" step="0.01" />
+    </div>
+    <div class="field-group">
+      <label for="roll-current">Current Price ($)</label>
+      <input type="number" id="roll-current" placeholder="e.g. 132" step="0.01" />
+    </div>
+  </div>
+  <div class="roll-result neutral" id="roll-result">
+    Enter a put strike price and current underlying price to see roll guidance.
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/prod/solver.js"></script>
@@ -1145,6 +1228,113 @@
   btnAddAcct.addEventListener('click', () => {
     addAccount('', '', '');
   });
+
+  // ── Rolling calculator ──────────────────────────────────────
+  const rollStrikeInput  = document.getElementById('roll-strike');
+  const rollCurrentInput = document.getElementById('roll-current');
+  const rollResultDiv    = document.getElementById('roll-result');
+
+  function getNextFriday(fromDate) {
+    const d = new Date(fromDate);
+    const day = d.getDay(); // 0=Sun, 5=Fri
+    const daysUntilFri = (5 - day + 7) % 7 || 7; // next Friday (not today)
+    d.setDate(d.getDate() + daysUntilFri);
+    return d;
+  }
+
+  function getFridayWeeksOut(weeks) {
+    const now = new Date();
+    const target = new Date(now);
+    target.setDate(target.getDate() + weeks * 7);
+    // Snap to Friday of that week: offset from current day to Friday
+    const day = target.getDay(); // 0=Sun ... 5=Fri, 6=Sat
+    if (day <= 5) {
+      target.setDate(target.getDate() + (5 - day));
+    } else {
+      // Saturday: go back 1 to Friday
+      target.setDate(target.getDate() - 1);
+    }
+    return target;
+  }
+
+  function formatDate(d) {
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long', month: 'short', day: 'numeric', year: 'numeric'
+    });
+  }
+
+  function calculateRoll() {
+    const strike  = parseFloat(rollStrikeInput.value);
+    const current = parseFloat(rollCurrentInput.value);
+
+    if (!strike || !current || strike <= 0 || current <= 0) {
+      rollResultDiv.className = 'roll-result neutral';
+      rollResultDiv.innerHTML = 'Enter a put strike price and current underlying price to see roll guidance.';
+      return;
+    }
+
+    // For puts: ITM when current < strike
+    if (current >= strike) {
+      rollResultDiv.className = 'roll-result safe';
+      rollResultDiv.innerHTML = `
+        <div class="roll-date">No roll needed</div>
+        <div class="roll-detail">Position is OTM or ATM (current $${current.toFixed(2)} ≥ strike $${strike.toFixed(2)}). No action required.</div>
+      `;
+      return;
+    }
+
+    const itmAmount = strike - current;
+    const itmPct = (itmAmount / strike) * 100;
+    const today = new Date();
+    const isFriday = today.getDay() === 5;
+
+    let rollDate, message, severity;
+
+    if (itmPct <= 5) {
+      if (isFriday) {
+        rollDate = getNextFriday(today);
+        message = `ITM ${itmPct.toFixed(1)}% — it's Friday, roll to next week.`;
+        severity = 'safe';
+      } else {
+        rollResultDiv.className = 'roll-result safe';
+        rollResultDiv.innerHTML = `
+          <div class="roll-date">Do nothing</div>
+          <div class="roll-detail">ITM ${itmPct.toFixed(1)}% (0–5% range). Position is only slightly ITM — hold unless it's expiration day.</div>
+        `;
+        return;
+      }
+    } else if (itmPct <= 10) {
+      rollDate = getFridayWeeksOut(1);
+      message = `ITM ${itmPct.toFixed(1)}% (5–10% range). Roll out one week.`;
+      severity = 'warn';
+    } else if (itmPct <= 15) {
+      rollDate = getFridayWeeksOut(2);
+      message = `ITM ${itmPct.toFixed(1)}% (10–15% range). Roll out two weeks.`;
+      severity = 'warn';
+    } else if (itmPct <= 20) {
+      rollDate = getFridayWeeksOut(3);
+      message = `ITM ${itmPct.toFixed(1)}% (15–20% range). Roll out three weeks.`;
+      severity = 'danger';
+    } else {
+      const fourWeeks = getFridayWeeksOut(4);
+      const sixWeeks  = getFridayWeeksOut(6);
+      rollResultDiv.className = 'roll-result danger';
+      rollResultDiv.innerHTML = `
+        <div class="roll-date">Deep ITM — ${itmPct.toFixed(1)}%</div>
+        <div class="roll-detail">Position is >20% in the money. Consider rolling to 4–6 weeks out (${formatDate(fourWeeks)} – ${formatDate(sixWeeks)}) but check premiums before committing. May need to roll down in strike as well.</div>
+      `;
+      return;
+    }
+
+    rollResultDiv.className = `roll-result ${severity}`;
+    rollResultDiv.innerHTML = `
+      <div class="roll-date">Roll to: ${formatDate(rollDate)}</div>
+      <div class="roll-detail">${message}</div>
+    `;
+  }
+
+  rollStrikeInput.addEventListener('input', calculateRoll);
+  rollCurrentInput.addEventListener('input', calculateRoll);
 
   // ── Init ───────────────────────────────────────────────────
   // Seed with 3 accounts
