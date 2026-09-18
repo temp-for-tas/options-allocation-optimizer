@@ -273,6 +273,51 @@
     }
     .btn-remove:hover { color: #f56565; }
 
+    /* ── Per-row include toggle ── */
+    .col-include-head { text-align: center; width: 44px; }
+    .col-include { text-align: center; padding: 6px 8px; }
+    .row-toggle {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+      vertical-align: middle;
+    }
+    .row-toggle input { display: none; }
+    .row-toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #2d3548;
+      border-radius: 18px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .row-toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 12px; height: 12px;
+      left: 3px; top: 3px;
+      background: #64748b;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .row-toggle input:checked + .row-toggle-slider { background: #1e3a5f; }
+    .row-toggle input:checked + .row-toggle-slider::before {
+      transform: translateX(16px);
+      background: #4f8ef7;
+    }
+
+    /* ── Excluded row (toggled off) ── */
+    tbody tr.row-excluded td:not(.col-include) {
+      opacity: 0.35;
+    }
+    tbody tr.row-excluded .inp-ticker,
+    tbody tr.row-excluded .inp-strike,
+    tbody tr.row-excluded .inp-premium {
+      text-decoration: line-through;
+      text-decoration-color: #64748b;
+    }
+
     .row-actions {
       display: flex;
       gap: 12px;
@@ -887,7 +932,7 @@
   // ── Dynamic table header ───────────────────────────────────
   function rebuildTableHeader() {
     let html = '<tr>';
-    html += '<th>Ticker</th><th>Type</th><th>Strike ($)</th><th>Premium ($)</th><th>Cost / Contract</th>';
+    html += '<th class="col-include-head">On</th><th>Ticker</th><th>Type</th><th>Strike ($)</th><th>Premium ($)</th><th>Cost / Contract</th>';
     accounts.forEach(acct => {
       const name = acct.name || `Acct ${acct.id}`;
       html += `<th class="acct-group">${name}<br>Contracts</th>`;
@@ -937,6 +982,12 @@
 
     // Base cells
     let html = `
+      <td class="col-include">
+        <label class="row-toggle" title="Include this ticker in optimization">
+          <input type="checkbox" class="inp-include" checked />
+          <span class="row-toggle-slider"></span>
+        </label>
+      </td>
       <td><input class="inp-ticker" type="text" placeholder="AAPL" value="${ticker}" /></td>
       <td>
         <select class="inp-type">
@@ -961,6 +1012,8 @@
     tr.querySelectorAll('input, select').forEach(el =>
       el.addEventListener('input', recalculate)
     );
+    // Checkboxes reliably fire 'change'; ensure the toggle recalculates
+    tr.querySelector('.inp-include').addEventListener('change', recalculate);
     tr.querySelector('.btn-remove').addEventListener('click', () => {
       tr.remove();
       recalculate();
@@ -983,7 +1036,10 @@
       const strike  = parseFloat(tr.querySelector('.inp-strike').value)  || 0;
       const premium = parseFloat(tr.querySelector('.inp-premium').value) || 0;
       const cost    = computeCost(type, strike, premium, enhanced);
-      rows.push({ ticker, type, strike, premium, cost, tr });
+      const included = tr.querySelector('.inp-include').checked;
+      // Dim excluded rows for visual feedback
+      tr.classList.toggle('row-excluded', !included);
+      rows.push({ ticker, type, strike, premium, cost, included, tr });
     });
 
     // Update Cost/Contract cells
@@ -1001,7 +1057,7 @@
       }
     });
 
-    const activeRows = rows.filter(r => r.strike > 0);
+    const activeRows = rows.filter(r => r.strike > 0 && r.included);
 
     // Run optimizer per account
     const results = accounts.map(acct => {

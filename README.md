@@ -6,7 +6,7 @@ A client-side tool for sizing options positions across multiple brokerage accoun
 
 1. **Add accounts** — Name each brokerage account and enter its available cash. Each account is optimized independently against the same set of tickers. The 8–12% position size hint updates automatically per account.
 
-2. **Enter positions** — For each ticker, enter the type (put/call), strike price, and premium. The cost per contract updates in real time.
+2. **Enter positions** — For each ticker, enter the type (put/call), strike price, and premium. The cost per contract updates in real time. Use the **On** toggle at the start of each row to include or exclude that ticker from the optimization without deleting it — handy for quickly comparing scenarios. Excluded rows are dimmed and get no contract suggestions.
 
 3. **Read results** — The table shows recommended contracts, total cost, and percentage of cash per ticker for each account. Summary cards below the table show allocation, remaining cash, and utilization percentage.
 
