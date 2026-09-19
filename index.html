@@ -234,6 +234,12 @@
       white-space: nowrap;
       padding: 6px 14px;
     }
+    .col-prem-pct {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      padding: 6px 14px;
+    }
     .col-rec {
       background: #151b2e;
       text-align: center;
@@ -932,7 +938,7 @@
   // ── Dynamic table header ───────────────────────────────────
   function rebuildTableHeader() {
     let html = '<tr>';
-    html += '<th class="col-include-head">On</th><th>Ticker</th><th>Type</th><th>Strike ($)</th><th>Premium ($)</th><th>Cost / Contract</th>';
+    html += '<th class="col-include-head">On</th><th>Ticker</th><th>Type</th><th>Strike ($)</th><th>Premium ($)</th><th>Premium %</th><th>Cost / Contract</th>';
     accounts.forEach(acct => {
       const name = acct.name || `Acct ${acct.id}`;
       html += `<th class="acct-group">${name}<br>Contracts</th>`;
@@ -997,6 +1003,7 @@
       </td>
       <td><input class="inp-strike"  type="number" min="0" step="0.5"  placeholder="150" value="${strike}" /></td>
       <td><input class="inp-premium" type="number" min="0" step="0.01" placeholder="1.50" value="${premium}" /></td>
+      <td class="col-prem-pct">—</td>
       <td class="col-cost">—</td>`;
 
     // Per-account cells
@@ -1054,6 +1061,21 @@
         cell.textContent = sign + Math.abs(r.cost).toLocaleString('en-US', {
           minimumFractionDigits: 2, maximumFractionDigits: 2
         });
+      }
+
+      // Update Premium % cell — net premium (after fees) over investment.
+      // Investment basis is the collateral: strike × 100.
+      // Net premium per contract = (premium × 100) − per-contract fees.
+      const premCell = r.tr.querySelector('.col-prem-pct');
+      const investment = r.strike * 100;
+      if (r.strike === 0 || investment <= 0) {
+        premCell.textContent = '—';
+      } else {
+        // Fees only apply in Enhanced mode (matches computeCost behaviour)
+        const fees = enhanced ? TOTAL_FEE : 0;
+        const netPremium = r.premium * 100 - fees;
+        const pct = (netPremium / investment) * 100;
+        premCell.textContent = pct.toFixed(2) + '%';
       }
     });
 

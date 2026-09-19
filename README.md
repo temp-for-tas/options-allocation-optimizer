@@ -8,6 +8,8 @@ A client-side tool for sizing options positions across multiple brokerage accoun
 
 2. **Enter positions** — For each ticker, enter the type (put/call), strike price, and premium. The cost per contract updates in real time. Use the **On** toggle at the start of each row to include or exclude that ticker from the optimization without deleting it — handy for quickly comparing scenarios. Excluded rows are dimmed and get no contract suggestions.
 
+   The **Premium %** column shows the net premium (after commissions and fees in Enhanced mode) as a percentage of the collateral (`strike × 100`). For example, a $10 strike collecting $0.10 premium yields `($10.00 − $0.66) / $1,000 = 0.93%` — a touch under 1% because the per-contract fee is deducted. In Basic mode no fees are subtracted, so the same position reads a clean 1.00%.
+
 3. **Read results** — The table shows recommended contracts, total cost, and percentage of cash per ticker for each account. Summary cards below the table show allocation, remaining cash, and utilization percentage.
 
 4. **Funds needed** — Below the summaries, the app shows the minimum dollar amount you'd need to add to each account to reach full utilization (where remaining cash can't buy another contract). It re-runs the optimizer at the higher budget and shows the resulting allocation change.
