@@ -455,6 +455,41 @@
       letter-spacing: 0.07em;
       color: #4a5568;
     }
+    .funds-needed-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-funds-calc {
+      background: #1e3a5f;
+      color: #4f8ef7;
+      border: 1px solid #2a4a75;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn-funds-calc:hover:not(:disabled) { opacity: 0.85; }
+    .btn-funds-calc:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .funds-needed-note {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .funds-needed-empty {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 12px;
+    }
+    /* Dim results when inputs have changed since the last calculation */
+    .funds-needed-content.stale {
+      opacity: 0.4;
+      transition: opacity 0.2s;
+    }
     .funds-needed-amount {
       font-size: 1.25rem;
       font-weight: 700;
@@ -619,11 +654,14 @@
 <div class="summaries-wrap" id="summaries-wrap"></div>
 
 <!-- ── Funds needed section ── -->
-<div class="funds-needed" id="funds-needed-section" style="display:none">
-  <div class="funds-needed-header">
+<div class="funds-needed" id="funds-needed-section">
+  <div class="funds-needed-header funds-needed-bar">
     <span class="funds-needed-title">Funds to Reach Full Utilisation</span>
+    <button class="btn-funds-calc" id="btn-funds-calc">Calculate</button>
+    <span class="funds-needed-note">On demand — transferred funds may take days to settle.</span>
   </div>
-  <div id="funds-needed-content"></div>
+  <div id="funds-needed-content" class="funds-needed-content"></div>
+  <p class="funds-needed-empty" id="funds-needed-empty">Click Calculate to see how much to add to each account for full utilisation.</p>
 </div>
 
 <!-- ── Rolling calculator ── -->
@@ -869,8 +907,39 @@
   const accountsList = document.getElementById('accounts-list');
   const btnAddAcct   = document.getElementById('btn-add-acct');
   const summariesWrap = document.getElementById('summaries-wrap');
-  const fundsSection  = document.getElementById('funds-needed-section');
   const fundsContent  = document.getElementById('funds-needed-content');
+  const fundsEmpty    = document.getElementById('funds-needed-empty');
+  const btnFundsCalc  = document.getElementById('btn-funds-calc');
+
+  // ── Funds-needed on-demand state ───────────────────────────
+  // Latest solve inputs, cached so the Calculate button can run the sweep
+  // without re-solving. hasCalculated tracks whether results are shown so
+  // we can mark them stale (dim + relabel) when inputs change afterward.
+  let lastActiveRows = [];
+  let lastResults    = [];
+  let hasCalculated  = false;
+
+  // Enable/disable the button and mark existing results stale on input change
+  function updateFundsButtonState() {
+    const canCalc = lastActiveRows.length > 0
+      && lastResults.some(r => r.acct.cash > 0);
+    btnFundsCalc.disabled = !canCalc;
+
+    if (hasCalculated) {
+      // Inputs changed since last calc → results may be out of date
+      fundsContent.classList.add('stale');
+      btnFundsCalc.textContent = 'Recalculate';
+    }
+  }
+
+  // Run the funds-needed sweep on demand and render fresh results
+  function calculateFundsNeeded() {
+    renderFundsNeeded(lastActiveRows, lastResults);
+    hasCalculated = true;
+    fundsContent.classList.remove('stale');
+    fundsEmpty.style.display = 'none';
+    btnFundsCalc.textContent = 'Recalculate';
+  }
 
   // ── Account management ─────────────────────────────────────
   function addAccount(name = '', accountValue = '', cash = '') {
@@ -1112,8 +1181,12 @@
     // Render per-account summaries
     renderSummaries(results);
 
-    // Render funds-needed per account
-    renderFundsNeeded(activeRows, results);
+    // Funds-needed is now calculated on demand (see the Calculate button).
+    // Store the latest inputs so the button can use them, mark any existing
+    // results as stale, and enable/disable the button appropriately.
+    lastActiveRows = activeRows;
+    lastResults    = results;
+    updateFundsButtonState();
   }
 
   // ── Render per-account summaries ───────────────────────────
@@ -1257,7 +1330,13 @@
       anyShown = true;
     });
 
-    fundsSection.style.display = anyShown ? 'block' : 'none';
+    // Section is always visible now; show a message if there's nothing to show
+    if (!anyShown) {
+      fundsEmpty.textContent = 'No accounts with cash and active tickers to calculate.';
+      fundsEmpty.style.display = 'block';
+    } else {
+      fundsEmpty.style.display = 'none';
+    }
   }
 
   // ── Mode toggle ────────────────────────────────────────────
@@ -1283,6 +1362,12 @@
 
   btnAddAcct.addEventListener('click', () => {
     addAccount('', '', '');
+  });
+
+  // ── Funds-needed Calculate button ──────────────────────────
+  btnFundsCalc.addEventListener('click', () => {
+    if (btnFundsCalc.disabled) return;
+    calculateFundsNeeded();
   });
 
   // ── Rolling calculator ──────────────────────────────────────

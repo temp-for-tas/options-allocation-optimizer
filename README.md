@@ -10,7 +10,7 @@ A client-side tool for sizing options positions across multiple brokerage accoun
 
 3. **Read results** — The table shows recommended contracts, total cost, and percentage of cash per ticker for each account. Summary cards below the table show allocation, remaining cash, and utilization percentage.
 
-4. **Funds needed** — Below the summaries, the app shows the minimum dollar amount you'd need to add to each account to reach full utilization (where remaining cash can't buy another contract). It re-runs the optimizer at the higher budget and shows the resulting allocation change.
+4. **Funds needed** — Below the summaries, click **Calculate** to find the minimum dollar amount you'd need to add to each account to reach full utilization (where remaining cash can't buy another contract). It re-runs the optimizer at the higher budget and shows the resulting allocation change. This runs on demand (not on every edit) since transferred funds often take days to settle — and because the sweep is the heaviest computation in the app. If you change any inputs after calculating, the results dim and the button relabels to **Recalculate** to signal they may be stale.
 
 ### Modes
 
@@ -90,7 +90,7 @@ For each account, the app finds the minimum additional cash where:
 1. Utilization improves over the current allocation, AND
 2. Remaining cash after optimization is less than the cheapest available contract (the optimizer literally can't do better)
 
-It generates candidate amounts from both single-row cost thresholds and a dense $1 sweep, evaluates them in ascending order, and stops at the first qualifying result.
+It generates candidate amounts from both single-row cost thresholds and a dense $1 sweep, evaluates them in ascending order, and stops at the first qualifying result. This sweep runs only when you click **Calculate** (or **Recalculate**), keeping the main allocation solve fast.
 
 ## Deployment
 
