@@ -10,6 +10,8 @@ A client-side tool for sizing options positions across multiple brokerage accoun
 
 3. **Read results** — The table shows recommended contracts, total cost, and percentage of cash per ticker for each account. Summary cards below the table show allocation, remaining cash, and utilization percentage.
 
+   Cost-per-contract cells update instantly as you type. The heavier optimizer solve is debounced (~300 ms after you stop typing), and the "funds needed" sweep waits a little longer (~600 ms), so the app stays responsive even with many tickers and accounts. Discrete actions like adding a row, adding an account, or toggling modes recalculate immediately.
+
 4. **Funds needed** — Below the summaries, the app shows the minimum dollar amount you'd need to add to each account to reach full utilization (where remaining cash can't buy another contract). It re-runs the optimizer at the higher budget and shows the resulting allocation change.
 
 ### Modes
