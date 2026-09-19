@@ -879,7 +879,7 @@
     renderAccountRow(accounts[accounts.length - 1]);
     rebuildTableHeader();
     rebuildTableRowCells();
-    recalculate();
+    recalculateNow();
   }
 
   function removeAccount(id) {
@@ -888,7 +888,7 @@
     if (el) el.remove();
     rebuildTableHeader();
     rebuildTableRowCells();
-    recalculate();
+    recalculateNow();
   }
 
   function renderAccountRow(acct) {
@@ -1016,7 +1016,7 @@
     tr.querySelector('.inp-include').addEventListener('change', recalculate);
     tr.querySelector('.btn-remove').addEventListener('click', () => {
       tr.remove();
-      recalculate();
+      recalculateNow();
     });
 
     return tr;
@@ -1026,10 +1026,18 @@
     tableBody.appendChild(createRow(ticker, type, strike, premium));
   }
 
-  // ── Recalculate ────────────────────────────────────────────
-  function recalculate() {
-    const rows = [];
+  // ── Debounce timers ────────────────────────────────────────
+  // Solving the ILP (and especially the funds-needed sweep) is expensive.
+  // We run cheap UI updates instantly on every input, but debounce the
+  // heavy work so it only fires after the user pauses typing.
+  const SOLVE_DELAY = 300;  // ms — main allocation solve
+  const FUNDS_DELAY = 600;  // ms — funds-needed sweep (heavier, less urgent)
+  let solveTimer = null;
+  let fundsTimer = null;
 
+  // ── Read all rows from the DOM into plain objects ──────────
+  function readRows() {
+    const rows = [];
     tableBody.querySelectorAll('tr[data-id]').forEach(tr => {
       const ticker  = tr.querySelector('.inp-ticker').value.trim();
       const type    = tr.querySelector('.inp-type').value;
@@ -1041,7 +1049,11 @@
       tr.classList.toggle('row-excluded', !included);
       rows.push({ ticker, type, strike, premium, cost, included, tr });
     });
+    return rows;
+  }
 
+  // ── Cheap, instant UI updates (cost cells + position hints) ─
+  function updateCheapUI(rows) {
     // Update Cost/Contract cells
     rows.forEach(r => {
       const cell = r.tr.querySelector('.col-cost');
@@ -1057,6 +1069,23 @@
       }
     });
 
+    // Update position size hints per account (uses accountValue)
+    accounts.forEach(acct => {
+      const hint = document.querySelector(`.pos-hint[data-acct-id="${acct.id}"]`);
+      if (hint) {
+        if (acct.accountValue > 0) {
+          const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+          hint.textContent = `8–12%: ${fmt(acct.accountValue * 0.08)} – ${fmt(acct.accountValue * 0.12)}`;
+        } else {
+          hint.textContent = '8–12%: —';
+        }
+      }
+    });
+  }
+
+  // ── Expensive solve: ILP per account + per-row cells + summaries ─
+  function runSolve() {
+    const rows = readRows();
     const activeRows = rows.filter(r => r.strike > 0 && r.included);
 
     // Run optimizer per account
@@ -1096,24 +1125,33 @@
       });
     });
 
-    // Update position size hints per account (uses accountValue)
-    accounts.forEach(acct => {
-      const hint = document.querySelector(`.pos-hint[data-acct-id="${acct.id}"]`);
-      if (hint) {
-        if (acct.accountValue > 0) {
-          const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-          hint.textContent = `8–12%: ${fmt(acct.accountValue * 0.08)} – ${fmt(acct.accountValue * 0.12)}`;
-        } else {
-          hint.textContent = '8–12%: —';
-        }
-      }
-    });
-
     // Render per-account summaries
     renderSummaries(results);
 
-    // Render funds-needed per account
-    renderFundsNeeded(activeRows, results);
+    // Schedule the funds-needed sweep separately (heavier, longer delay)
+    if (fundsTimer) clearTimeout(fundsTimer);
+    fundsTimer = setTimeout(() => renderFundsNeeded(activeRows, results), FUNDS_DELAY);
+  }
+
+  // ── Recalculate entry point ────────────────────────────────
+  // Cheap UI updates run immediately; the expensive solve is debounced.
+  function recalculate() {
+    const rows = readRows();
+    updateCheapUI(rows);
+
+    if (solveTimer) clearTimeout(solveTimer);
+    solveTimer = setTimeout(runSolve, SOLVE_DELAY);
+  }
+
+  // ── Force an immediate recalculation (no debounce) ─────────
+  // Used for structural changes like adding/removing accounts or rows,
+  // and the initial render, where we want results right away.
+  function recalculateNow() {
+    if (solveTimer) { clearTimeout(solveTimer); solveTimer = null; }
+    if (fundsTimer) { clearTimeout(fundsTimer); fundsTimer = null; }
+    const rows = readRows();
+    updateCheapUI(rows);
+    runSolve();
   }
 
   // ── Render per-account summaries ───────────────────────────
@@ -1265,20 +1303,20 @@
     enhanced = modeToggle.checked;
     modeLabelB.classList.toggle('toggle-label-active', !enhanced);
     modeLabelE.classList.toggle('toggle-label-active',  enhanced);
-    recalculate();
+    recalculateNow();
   });
 
   // ── Buttons ────────────────────────────────────────────────
   btnAddRow.addEventListener('click', () => {
     for (let i = 0; i < 10; i++) addRow();
-    recalculate();
+    recalculateNow();
   });
 
   btnReset.addEventListener('click', () => {
     tableBody.innerHTML = '';
     rowId = 0;
     for (let i = 0; i < 10; i++) addRow();
-    recalculate();
+    recalculateNow();
   });
 
   btnAddAcct.addEventListener('click', () => {
@@ -1400,7 +1438,7 @@
 
   // Seed with 10 empty rows
   for (let i = 0; i < 10; i++) addRow();
-  recalculate();
+  recalculateNow();
 
   // Set initial mode label
   modeLabelE.classList.add('toggle-label-active');
