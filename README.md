@@ -1,6 +1,6 @@
 # Options Allocation Optimizer
 
-A client-side tool for sizing options positions across multiple brokerage accounts. It uses an Integer Linear Programming (ILP) solver to recommend how many contracts of each ticker to sell, balancing dollar exposure evenly while maximizing cash utilization.
+A client-side tool for sizing options positions across multiple brokerage accounts. It recommends how many contracts of each ticker to sell, sizing each position to a target band of the account value (8–12%) and preferring fewer, properly-sized positions over many tiny ones.
 
 ## How to Use
 
@@ -23,69 +23,37 @@ A client-side tool for sizing options positions across multiple brokerage accoun
 
 ## Solver Logic
 
-The optimizer is a bounded integer knapsack solved via [jsLPSolver](https://github.com/JWally/jsLPSolver).
+The optimizer sizes each position to a **target band of the account value** and prefers fewer, properly-sized positions over many small ones.
 
-### Objective
+### Target Band
 
-Maximize total dollar allocation across all tickers:
-
-```
-maximize  Σ (cost_i × n_i)
-```
-
-where `cost_i` is the net cash cost of one contract of ticker `i` and `n_i` is the number of contracts.
-
-### Constraints
-
-| Constraint | Formula | Purpose |
-|---|---|---|
-| Budget | `Σ (cost_i × n_i) ≤ available_cash` | Don't exceed account cash |
-| Minimum 1 | `n_i ≥ 1` for all i (when affordable) | Every ticker gets at least one contract |
-| Upper bound | `n_i ≤ floor(budget / cost_i)` | No single ticker can exceed what the budget could theoretically support |
-| Dollar evenness | `maxD - minD ≤ dollarTolerance` | Positions must stay within a tight dollar spread of each other (see below) |
-| Integrality | `n_i ∈ integers` | Can't buy fractional contracts |
-
-### Dollar Balance
-
-The solver tracks two continuous auxiliary variables:
-
-- `maxD` — the largest dollar allocation across all tickers (`≥ cost_i × n_i` for all i)
-- `minD` — the smallest dollar allocation across all tickers (`≤ cost_i × n_i` for all i)
-
-The hard constraint `maxD - minD ≤ dollarTolerance` forces positions to stay balanced. The tolerance is computed as:
+The band is derived from the account **value** (the Value field, not available cash — some of that value may be locked in rolled contracts, but positions are still sized against the full account):
 
 ```
-dollarTolerance = max(avgCost, maxCost × 0.25)
+targetLow  = value × 0.08
+targetMid  = value × 0.10
+targetHigh = value × 0.12
 ```
 
-where `avgCost` and `maxCost` are calculated only over **affordable** tickers (those with cost ≤ budget). Tickers too expensive for the account are excluded from balance tracking entirely, so they don't artificially distort the constraint.
+Sizing is absolute (against account value), so a ticker that ends up with **0 contracts never influences the sizing of any other ticker**. Toggling an unfunded ticker on or off leaves the rest of the allocation unchanged.
 
-This keeps positions within roughly one average contract's cost of each other in dollar terms — tight enough for meaningful balance, loose enough that the ILP can fill the budget well.
+### Algorithm (per account)
 
-If the tight tolerance produces an infeasible model, the solver progressively relaxes through `[dollarTolerance, maxCost × 0.5, maxCost × 0.75, maxCost, budget]` until a feasible solution is found.
+1. **Free rows** — Tickers with non-positive cost (e.g. premium-inflow calls in Enhanced mode) get 1 contract and are excluded from sizing since they don't consume cash.
 
-A balance penalty scaled as `1 / (budget + 1)` is applied to the spread (`-ε × maxD + ε × minD` in the objective) so the solver actively minimizes position imbalance rather than treating it as a pure tiebreaker.
+2. **Band count** — For each remaining ticker, find the contract count whose dollar allocation lands closest to `targetMid`. A ticker is *oversized* if even a single contract exceeds `targetHigh` (funding it would create a concentrated position).
 
-### Phase 2: Greedy Fill
+3. **Rank candidates** — by, in order: not-oversized first, then in-band achievable, then net premium yield (yield ÷ cost, best first), then closeness to the band midpoint, then cheaper cost.
 
-The tight balance constraint in phase 1 may leave budget unspent (remaining cash can still afford contracts, but adding them would violate the evenness tolerance). Phase 2 greedily fills that gap:
+4. **Pass 1 — disciplined sizing** — Walk the ranked list and fund each non-oversized ticker to its band count, if available cash allows. Capped at **one target-band position per ticker**, so cash isn't concentrated by doubling up.
 
-1. Compute remaining cash after the balanced ILP solution.
-2. Among tickers whose contract cost fits in the remaining cash, pick the one with the **lowest current dollar allocation**.
-3. Add one contract to that ticker and repeat until no contract fits.
+5. **Pass 2 — soak up leftover cash** — If cash remains, add a **single** extra position rather than leaving it idle: first an unfunded, non-oversized ticker (an underweight position is acceptable); only as a last resort an oversized ticker.
 
-This two-phase design keeps the bulk of the allocation balanced while maximizing utilization. The imbalance introduced by phase 2 is naturally bounded by how little budget remains after the balanced pass.
+This delivers the intended behavior: given two tickers that would each only reach ~4% of value at one contract, the higher-yielding one is funded with two contracts to reach ~8% (in-band) and the other is skipped — a properly-sized position beats two underweight halves. Diversification is preserved by capping each ticker at one band position and allowing only a single underweight fill.
 
-### Greedy Fallback
+### Ranking by Yield
 
-If the ILP solver is unavailable or produces an infeasible result, a greedy algorithm takes over:
-
-1. Pre-assign 1 contract per ticker (if the budget allows).
-2. Repeatedly add one more contract to whichever ticker has the **lowest current dollar allocation**, until no more contracts fit in the remaining budget.
-
-### Free Rows
-
-Calls in Enhanced mode often have negative cost (premium inflow exceeds the $0.66 fee). These are pre-assigned 1 contract and excluded from the ILP since they don't consume cash.
+Candidates are ranked by net premium % (`(premium × 100 − fees) ÷ cost` in Enhanced mode). Higher-yielding tickers are funded first, so selection is meaningful and deterministic rather than arbitrary.
 
 ### Funds Needed Calculation
 
@@ -98,7 +66,7 @@ It generates candidate amounts from both single-row cost thresholds and a dense 
 
 ## Deployment
 
-The app is a single `index.html` file with no build step. It loads the LP solver from a CDN. Host it anywhere that serves static files — GitHub Pages, Netlify, or just open the file locally in a browser.
+The app is a single `index.html` file with no build step and no external dependencies. Host it anywhere that serves static files — GitHub Pages, Netlify, or just open the file locally in a browser.
 
 ## Fees
 
