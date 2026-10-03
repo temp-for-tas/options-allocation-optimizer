@@ -747,9 +747,10 @@
   //   3. Rank candidates by net premium % (best yield first).
   //   4. Pass 1 — fund each candidate to its target-band count if available
   //      cash allows, capped at ONE target-band position per ticker.
-  //   5. Pass 2 — if cash remains, add a SINGLE extra position rather than
-  //      leaving it idle: prefer an unfunded non-oversized ticker (underweight
-  //      is fine); only fall back to an oversized ticker as a last resort.
+  //   5. Pass 2 — if cash remains, use it: first start new positions
+  //      (diversify), then WIDEN existing positions through rising ceilings
+  //      (12% → 15% → 20% → 25%), always growing the lowest-weighted position
+  //      first so weight is spread rather than concentrated. Hard cap 25%.
   //
   // Sizing is absolute (against account value), so a ticker that ends up
   // with 0 contracts never influences the sizing of the others.
@@ -844,29 +845,63 @@
       }
     }
 
-    // ── Pass 2: single extra position to soak up leftover cash ──
-    // If cash still remains and no funded ticker can absorb it, add ONE more
-    // position rather than leaving cash idle. Prefer an unfunded non-oversized
-    // ticker (an underweight position is acceptable); only fall back to an
-    // oversized ticker as a last resort.
-    const cheapest = Math.min(...candidates.map(c => c.cost));
-    if (remaining >= cheapest) {
-      let picked = false;
-      // First choice: an unfunded, non-oversized ticker (underweight is fine).
+    // ── Pass 2: use leftover cash, diversify-then-widen ──
+    // If cash remains after the disciplined 8–12% pass, we first try to start
+    // NEW positions (diversification), then gradually WIDEN existing positions
+    // through rising ceilings (12% → 15% → 20% → 25%). Within each step we add
+    // a contract to the LOWEST-weighted eligible position first ("spread before
+    // deepen"), so three ~12% positions are preferred over one 24% position.
+    // No position ever exceeds the 25% hard cap.
+    const costOf   = (c) => c.cost;
+    const dollarsOf = (c) => counts[c.i] * c.cost;      // current allocation
+    const cheapest = Math.min(...candidates.map(costOf));
+
+    // Step 2a: start new positions for any unfunded, non-oversized ticker that
+    // fits — diversify before deepening anything.
+    let addedNew = true;
+    while (addedNew) {
+      addedNew = false;
       for (const c of candidates) {
-        if (picked) break;
         if (c.oversized || counts[c.i] > 0 || c.cost > remaining) continue;
-        const n = Math.floor(remaining / c.cost);
-        if (n >= 1) { counts[c.i] = n; remaining -= n * c.cost; picked = true; }
+        const n = Math.min(c.bandN, Math.floor(remaining / c.cost));
+        if (n >= 1) { counts[c.i] = n; remaining -= n * c.cost; addedNew = true; }
       }
-      // Last resort: an oversized ticker, only if nothing else could use the cash.
-      if (!picked) {
+    }
+
+    // Step 2b: tiered widening. For each rising ceiling, repeatedly grow the
+    // lowest-weighted funded position that can still take another contract
+    // without exceeding the ceiling (and the 25% hard cap).
+    const HARD_CAP = basis * 0.25;
+    const ceilings = [0.12, 0.15, 0.20, 0.25].map(p => Math.min(basis * p, HARD_CAP));
+
+    for (const ceil of ceilings) {
+      let grew = true;
+      while (grew && remaining >= cheapest) {
+        grew = false;
+        // Eligible: funded positions that fit another contract within this
+        // ceiling and remaining cash. Pick the lowest current allocation.
+        let pick = null, pickDollars = Infinity;
         for (const c of candidates) {
-          if (picked) break;
-          if (counts[c.i] > 0 || c.cost > remaining) continue;
-          const n = Math.floor(remaining / c.cost);
-          if (n >= 1) { counts[c.i] = n; remaining -= n * c.cost; picked = true; }
+          if (counts[c.i] < 1) continue;               // only grow funded positions
+          if (c.cost > remaining) continue;
+          const nextDollars = dollarsOf(c) + c.cost;
+          if (nextDollars > ceil + 1e-6) continue;      // would exceed this ceiling
+          const cur = dollarsOf(c);
+          if (cur < pickDollars) { pickDollars = cur; pick = c; }
         }
+        if (pick) { counts[pick.i] += 1; remaining -= pick.cost; grew = true; }
+      }
+    }
+
+    // Step 2c: last resort — if cash still remains and nothing above could use
+    // it (e.g. only an oversized unfunded ticker is left), fund one oversized
+    // ticker rather than leaving the cash idle, still respecting the 25% cap.
+    if (remaining >= cheapest) {
+      for (const c of candidates) {
+        if (counts[c.i] > 0 || c.cost > remaining) continue;
+        const maxByCap = Math.floor(HARD_CAP / c.cost);
+        const n = Math.min(maxByCap, Math.floor(remaining / c.cost));
+        if (n >= 1) { counts[c.i] = n; remaining -= n * c.cost; break; }
       }
     }
 

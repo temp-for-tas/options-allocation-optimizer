@@ -49,9 +49,15 @@ Sizing is absolute (against account value), so a ticker that ends up with **0 co
 
 4. **Pass 1 — disciplined sizing** — Walk the ranked list and fund each non-oversized ticker to its band count, if available cash allows. Capped at **one target-band position per ticker**, so cash isn't concentrated by doubling up.
 
-5. **Pass 2 — soak up leftover cash** — If cash remains, add a **single** extra position rather than leaving it idle: first an unfunded, non-oversized ticker (an underweight position is acceptable); only as a last resort an oversized ticker.
+5. **Pass 2 — use leftover cash (diversify, then widen)** — If cash remains after the disciplined pass, it's put to work in order:
+   - **Diversify first** — start new positions for any unfunded, non-oversized ticker that fits.
+   - **Then widen** — grow existing positions through rising ceilings (**12% → 15% → 20% → 25%**). At each ceiling, a contract is added to the **lowest-weighted** eligible position first ("spread before deepen"), so weight is distributed rather than piled onto one ticker. No position ever exceeds the **25% hard cap**.
+   - **Last resort** — if cash still can't be used (e.g. only an oversized unfunded ticker remains), fund one oversized position rather than leaving the cash idle, still within the 25% cap.
 
-This delivers the intended behavior: given two tickers that would each only reach ~4% of value at one contract, the higher-yielding one is funded with two contracts to reach ~8% (in-band) and the other is skipped — a properly-sized position beats two underweight halves. Diversification is preserved by capping each ticker at one band position and allowing only a single underweight fill.
+This delivers the intended behavior on two fronts:
+
+- Given two tickers that would each only reach ~4% of value at one contract, the higher-yielding one is funded with two contracts to reach ~8% (in-band) and the other is skipped — a properly-sized position beats two underweight halves.
+- When there's leftover cash but no room for a new properly-sized position (e.g. the remaining tickers are too expensive), existing positions are widened evenly. Three positions near 12–18% are preferred over one concentrated 24% position. Positions stay in the 8–12% band generally and only drift higher when idle cash would otherwise be wasted.
 
 ### Ranking by Yield
 
