@@ -10,6 +10,8 @@ A client-side tool for sizing options positions across multiple brokerage accoun
 
    The **Premium %** column shows the net premium (after commissions and fees in Enhanced mode) as a percentage of the collateral (`strike × 100`). For example, a $10 strike collecting $0.10 premium yields `($10.00 − $0.66) / $1,000 = 0.93%` — a touch under 1% because the per-contract fee is deducted. In Basic mode no fees are subtracted, so the same position reads a clean 1.00%.
 
+   If the same ticker is entered on more than one row (easy to do when pulling from multiple watchlists), those rows are highlighted and a warning banner appears. Duplicate rows would let the optimizer size the same ticker twice, so remove or disable the extras. Matching is case-insensitive and ignores empty rows.
+
 3. **Read results** — The table shows recommended contracts, total cost, and percentage of cash per ticker for each account. Summary cards below the table show allocation, remaining cash, and utilization percentage.
 
    Cost-per-contract cells update instantly as you type. The heavier optimizer solve is debounced (~300 ms after you stop typing), so the app stays responsive even with many tickers and accounts. Discrete actions like adding a row, adding an account, or toggling modes recalculate immediately.

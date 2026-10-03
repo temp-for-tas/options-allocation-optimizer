@@ -330,6 +330,30 @@
       margin-top: 14px;
     }
 
+    /* ── Duplicate ticker warning ── */
+    .dup-warning {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #2a2412;
+      border: 1px solid #6b5a1e;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #ecc94b;
+    }
+    .dup-warning-icon {
+      font-size: 1rem;
+      line-height: 1;
+    }
+    /* Highlight the ticker input on rows that are duplicated */
+    tbody tr.row-duplicate .inp-ticker {
+      border-color: #ecc94b;
+      background: #2a2412;
+      color: #ecc94b;
+    }
+
     button {
       cursor: pointer;
       border-radius: 6px;
@@ -650,6 +674,12 @@
   </table>
 </div>
 
+<!-- ── Duplicate ticker warning ── -->
+<div class="dup-warning" id="dup-warning" style="display:none">
+  <span class="dup-warning-icon">⚠</span>
+  <span id="dup-warning-text"></span>
+</div>
+
 <!-- ── Row actions ── -->
 <div class="row-actions">
   <button class="btn-add" id="btn-add-row">+ Add 10 Rows</button>
@@ -862,6 +892,8 @@
   const summariesWrap = document.getElementById('summaries-wrap');
   const fundsContent  = document.getElementById('funds-needed-content');
   const fundsEmpty    = document.getElementById('funds-needed-empty');
+  const dupWarning    = document.getElementById('dup-warning');
+  const dupWarningText = document.getElementById('dup-warning-text');
   const btnFundsCalc  = document.getElementById('btn-funds-calc');
 
   // ── Funds-needed on-demand state ───────────────────────────
@@ -1074,8 +1106,45 @@
     return rows;
   }
 
+  // ── Flag duplicate tickers ─────────────────────────────────
+  // Highlights rows that share the same (case-insensitive) ticker name and
+  // shows a warning banner. Catches accidentally adding the same ticker from
+  // two watchlists, which would otherwise let the optimizer size it twice.
+  function flagDuplicates(rows) {
+    // Count occurrences of each non-empty ticker name (case-insensitive)
+    const counts = new Map();
+    rows.forEach(r => {
+      const key = r.ticker.trim().toUpperCase();
+      if (!key) return;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    // Names that appear more than once
+    const dupNames = [...counts.entries()].filter(([, n]) => n > 1).map(([k]) => k);
+    const dupSet = new Set(dupNames);
+
+    // Highlight each duplicated row
+    rows.forEach(r => {
+      const key = r.ticker.trim().toUpperCase();
+      r.tr.classList.toggle('row-duplicate', !!key && dupSet.has(key));
+    });
+
+    // Update the warning banner
+    if (dupNames.length === 0) {
+      dupWarning.style.display = 'none';
+    } else {
+      const list = dupNames.sort().join(', ');
+      const plural = dupNames.length > 1 ? 'tickers are' : 'ticker is';
+      dupWarningText.textContent =
+        `Duplicate ${plural} listed: ${list}. The same ticker appears on more than one row — remove or disable the extras so it isn't sized twice.`;
+      dupWarning.style.display = 'flex';
+    }
+  }
+
   // ── Cheap, instant UI updates (cost cells + position hints) ─
   function updateCheapUI(rows) {
+    flagDuplicates(rows);
+
     // Update Cost/Contract cells
     rows.forEach(r => {
       const cell = r.tr.querySelector('.col-cost');
